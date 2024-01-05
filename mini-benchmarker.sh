@@ -199,8 +199,8 @@ intro() {
     echo -e "in ${TB}mini${TN} mode, running the following tests:\n"
 
     echo -e "${FARBE3}${TB}stress-ng cpu-cache-mem${TN} tests sort&search, integer and floating"
-    echo -e "point arithmetics, memory and cache operations, and vector instructions.\n"
-    echo -e "The ${FARBE3}${TB}SciMark${TN} bench is an older test involving scientific calculations.\n"
+    echo -e "point arithmetics, memory and cache operations.\n"
+    echo -e "The ${FARBE3}${TB}C-Ray${TN} is a simple CPU-based rendering engine.\n"
     echo -e "The ${FARBE3}${TB}perf sched${TN} benchmarks concentrate on interprocess communication"
     echo -e "and pipelining, whereas the ${FARBE3}${TB}perf mem${TN} benchmark tries to measure raw"
     echo -e "RAM throughput speed with the libc memcpy function.\n"
@@ -216,8 +216,8 @@ intro() {
     echo -e "By using the '--nano' parameter, it runs in ${TB}nano${TN} mode, running fewer"
     echo -e "but heavier benchmarks, measuring ${FARBE3}${TB}kernel defconfig${TN} compilation time,"
     echo -e "${FARBE3}${TB}xz compression${TN} level 6 of a large source code tarball,"
-    echo -e "the famous ${FARBE3}${TB}Blender${TN} BMW rendering (CPU only)," 
-    echo -e "and the ${FARBE3}${TB}y-cruncher${TN} highly optimised pi calculator."
+    echo -e "the famous ${FARBE3}${TB}Blender${TN} BMW rendering (CPU only), and"
+    echo -e "the ${FARBE3}${TB}y-cruncher${TN} highly optimised pi calculator."
     echo -e "The ${TB}nano${TN} mode does not apply weighting.\n"
 
     echo -e "The ${FARBE3}${TB}score${TN} is not really relevant. It tries to compress the pure"
