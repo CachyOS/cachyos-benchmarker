@@ -235,7 +235,7 @@ killproc() {
 
 exitproc() {
 	echo -e "\n-> Removing temporary files..."
-	for i in $WORKDIR/{"run*",stressC,"*.txt",firefox78.tar.xz,"*.zst","*.7z","*.png"} ; do rm -f $i ; done
+	for i in $WORKDIR/{"run*",stressC,"*.txt",firefox78.tar.xz,"*.zst","*.7z","*.png","*.ppm"} ; do rm -f $i ; done
 	rm $(echo $LOCKFILE) && echo -e "${TB}Bye!${TN}\n"
 }
 
