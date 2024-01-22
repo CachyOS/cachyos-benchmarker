@@ -251,7 +251,7 @@ CPUGOV=$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)
 CPUFREQ=$(awk '{print $1 / 1000000}' /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq)
 COEFF="$(python -c "print(round((($CPUCORES+1)/2 + $CPUFREQ) ** (1/3),4))")"
 KERNVER="6.1.65"
-STRESSVER="0.17.01"
+STRESSVER="0.17.04"
 # system info will be logged
 SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/RAM Report:.*//;/^\s*$/d")
 # allow more open files, needed by perf bench msg
