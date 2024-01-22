@@ -51,7 +51,7 @@ runzstd() {
 
 runx265() {
 	local RESFILE="$WORKDIR/runx265"
- 	/usr/bin/time -f %e -o $RESFILE x265 -p medium -o /dev/null --no-progress --log-level none $WORKDIR/bosphorus_hd.y4m &
+	/usr/bin/time -f %e -o $RESFILE x265 -p medium -b 5 -m 5 --pme -o /dev/null --no-progress --log-level none $WORKDIR/bosphorus_hd.y4m &
 	local PID=$!
 	echo -n -e "* ${TNAMES[3]}:\t\t\t"
 	local s='-+'; local i=0; while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
