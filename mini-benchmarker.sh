@@ -40,7 +40,7 @@ runffm() {
 
 runzstd() {
 	local RESFILE="$WORKDIR/runzstd"
- 	/usr/bin/time -f %e -o $RESFILE zstd -z -k -T${CPUCORES} -16 -q -f $WORKDIR/firefox78.tar &
+ 	/usr/bin/time -f %e -o $RESFILE zstd -z -k -T${CPUCORES} -16 -q -f $WORKDIR/firefox91.tar &
 	local PID=$!
 	echo -n -e "* ${TNAMES[2]}:\t\t\t"
 	local s='-+'; local i=0; while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
@@ -413,11 +413,11 @@ checkfiles() {
 		unzip -qqj "$WORKDIR/blender.zip" -d "$WORKDIR/blender"
 	fi
 
-	if [[ ! -f $WORKDIR/firefox78.tar ]]; then
-		wget --show-progress -N -qO $WORKDIR/firefox78.tar.xz \
-		  http://ftp.mozilla.org/pub/firefox/releases/78.15.0esr/source/firefox-78.15.0esr.source.tar.xz
+	if [[ ! -f $WORKDIR/firefox91.tar ]]; then
+		wget --show-progress -N -qO $WORKDIR/firefox91.tar.xz \
+		  http://ftp.mozilla.org/pub/firefox/releases/91.13.0esr/source/firefox-91.13.0esr.source.tar.xz
 		echo "--> Unzipping Firefox tarball..."
-		xz -d -q $WORKDIR/firefox78.tar.xz
+		xz -d -q $WORKDIR/firefox91.tar.xz
 	fi
 
 	if [[ ! -d "$WORKDIR/linux-$KERNVER" ]]; then
