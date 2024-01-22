@@ -178,7 +178,7 @@ runkern() {
 }
 
 runyc() {
-	cd "$WORKDIR/y-cruncher v0.8.3.9531-static" || exit 4
+	cd "$WORKDIR/y-cruncher v0.8.3.9532-static" || exit 4
 	local RESFILE="$WORKDIR/runyc"
 	/usr/bin/time -f%e -o "$RESFILE" ./y-cruncher bench 500m -od:0 -o $WORKDIR &>/dev/null &
 	local PID=$!
@@ -428,9 +428,9 @@ checkfiles() {
 		tar -xf linux-$KERNVER.tar.xz
 	fi
 
-	if [[ ! -d "$WORKDIR/y-cruncher v0.8.3.9531-static" ]]; then
+	if [[ ! -d "$WORKDIR/y-cruncher v0.8.3.9532-static" ]]; then
 		wget --show-progress -N -qO "$WORKDIR/y-cruncher.tar.xz" \
-		  http://numberworld.org/y-cruncher/"y-cruncher%20v0.8.3.9531-static.tar.xz"
+		  http://numberworld.org/y-cruncher/"y-cruncher%20v0.8.3.9532-static.tar.xz"
 		echo "--> Uncompressing y-cruncher..."
 		cd "$WORKDIR"
 		tar -xf y-cruncher.tar.xz
