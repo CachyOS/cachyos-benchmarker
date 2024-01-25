@@ -517,7 +517,7 @@ header() {
 case $CMDOPT in
 	'--mini')
 	    NRTESTS=11
-	    declare -a WEIGHTS=(0.9 0.8 0.9 0.95 0.85 0.9 0.85 0.8 1 1 1)
+	    declare -a WEIGHTS=(0.9 0.8 0.95 0.95 0.85 0.9 0.9 0.8 1 1 1)
 	    checkfiles ; checksys ; logging ; header
 	    runstress ; sleep 2
 	    runcray ; sleep 2
