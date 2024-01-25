@@ -80,7 +80,7 @@ runargon() {
 
 runperf_sch1() {
 	local RESFILE="$WORKDIR/runperf"
-	perf bench -f simple sched messaging -t -g 24 -l 4000 1> $RESFILE &
+	perf bench -f simple sched messaging -t -g 24 -l 5000 1> $RESFILE &
 	local PID=$!
 	echo -n -e "* ${TNAMES[5]}:\t\t"
 	local s='-+'; local i=0
@@ -92,7 +92,7 @@ runperf_sch1() {
 
 runperf_sch2() {
 	local RESFILE="$WORKDIR/runperf"
-	perf bench -f simple sched messaging -p -g 24 -l 4000 1> $RESFILE &
+	perf bench -f simple sched messaging -p -g 24 -l 5000 1> $RESFILE &
 	local PID=$!
 	echo -n -e "* ${TNAMES[6]}:\t\t"
 	local s='-+'; local i=0
