@@ -13,6 +13,19 @@ TNAMES=('stress-ng cpu-cache-mem' 'ffmpeg compilation' 'zstd compression'
 	'c-ray render' 'namd 92K atoms' 'blender render'
 	'xz compression' 'kernel defconfig' 'y-cruncher pi 500m')
 
+# animation
+
+animate() {
+	local s='-+' ; local i=0
+	while kill -0 $PID &>/dev/null
+		do i=$(( (i+1) %2 ))
+		printf "\b${s:$i:1}"
+		sleep 1
+	done
+	printf "\b " ; cat $RESFILE
+	echo -e "${TNAMES[$1]}: $(cat $RESFILE)" >> $LOGFILE
+}
+
 # tests definitions for mini run
 
 runstress() {
@@ -20,11 +33,7 @@ runstress() {
 	/usr/bin/time -f %e -o $RESFILE $STRESS -q --job $WORKDIR/stressC &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[0]}:\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[0]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 0 && return 0 || return 99
 }
 
 runffm() {
@@ -33,36 +42,25 @@ runffm() {
 	/usr/bin/time -f %e -o $RESFILE make -s -j${CPUCORES} &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[1]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[1]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 1 && return 0 || return 99
 }
 
 runzstd() {
 	local RESFILE="$WORKDIR/runzstd"
- 	/usr/bin/time -f %e -o $RESFILE zstd -z -k -T${CPUCORES} -16 -q -f $WORKDIR/firefox91.tar &
+	/usr/bin/time -f %e -o $RESFILE zstd -z -k -T${CPUCORES} -16 -q \
+	  -f $WORKDIR/firefox91.tar &
 	local PID=$!
 	echo -n -e "* ${TNAMES[2]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[2]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 2 && return 0 || return 99
 }
 
 runx265() {
 	local RESFILE="$WORKDIR/runx265"
-	/usr/bin/time -f %e -o $RESFILE x265 -p medium -b 5 -m 5 --pme -o /dev/null --no-progress \
-	  --log-level none $WORKDIR/bosphorus_hd.y4m &
+	/usr/bin/time -f %e -o $RESFILE x265 -p medium -b 5 -m 5 --pme -o /dev/null \
+	  --no-progress --log-level none $WORKDIR/bosphorus_hd.y4m &
 	local PID=$!
 	echo -n -e "* ${TNAMES[3]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[3]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 3 && return 0 || return 99
 }
 
 runargon() {
@@ -71,11 +69,7 @@ runargon() {
 	  -p $CPUCORES &>/dev/null <<< $(dd if=/dev/urandom bs=64 count=1 status=none) &
 	local PID=$!
 	echo -n -e "* ${TNAMES[4]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[4]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 4 && return 0 || return 99
 }
 
 runperf_sch1() {
@@ -83,11 +77,7 @@ runperf_sch1() {
 	perf bench -f simple sched messaging -t -g 24 -l 5000 1> $RESFILE &
 	local PID=$!
 	echo -n -e "* ${TNAMES[5]}:\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[5]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 5 && return 0 || return 99
 }
 
 runperf_sch2() {
@@ -95,11 +85,7 @@ runperf_sch2() {
 	perf bench -f simple sched messaging -p -g 24 -l 5000 1> $RESFILE &
 	local PID=$!
 	echo -n -e "* ${TNAMES[6]}:\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[6]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 6 && return 0 || return 99
 }
 
 runperf_mem() {
@@ -108,23 +94,16 @@ runperf_mem() {
 	  --size 2GB -f default &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[7]}:\t\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[7]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 7 && return 0 || return 99
 }
 
 runprime() {
 	local RESFILE="$WORKDIR/runprime"
-	/usr/bin/time -f%e -o $RESFILE primesieve 500000000000 --no-status | awk -F ': ' '/Seconds/{print $2}' 1> $RESFILE &
+	/usr/bin/time -f%e -o $RESFILE primesieve 500000000000 --no-status | awk -F ': ' \
+	  '/Seconds/{print $2}' 1> $RESFILE &
 	local PID=$!
 	echo -n -e "* ${TNAMES[8]}:\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[8]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 8 && return 0 || return 99
 }
 
 runcray() {
@@ -133,25 +112,18 @@ runcray() {
 	  -s 3200x1800 -r 8 -i $WORKDIR/c-ray-1.1/sphfract -o $WORKDIR/output.ppm 2>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[9]}:\t\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[9]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 9 && return 0 || return 99
 }
 
 runnamd() {
 	cd $WORKDIR/namd/NAMD_2.14_Linux-x86_64-multicore
 	local RESFILE="$WORKDIR/runnamd"
 	rm -f ../apoa1/FFTW*.txt
-	/usr/bin/time -f%e -o $RESFILE ./namd2 +p${CPUCORES} +setcpuaffinity ../apoa1/apoa1.namd &>/dev/null &
+	/usr/bin/time -f%e -o $RESFILE ./namd2 +p${CPUCORES} +setcpuaffinity \
+	  ../apoa1/apoa1.namd &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[10]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat $RESFILE
-	echo "${TNAMES[10]}: $(cat $RESFILE)" >> $LOGFILE
-	return 0
+	animate 10 && return 0 || return 99
 }
 
 # test definitions for nano run
@@ -160,26 +132,19 @@ runblend() {
 	local RESFILE="$WORKDIR/runblend"
 	local BLENDER_USER_CONFIG="$WORKDIR"
 	/usr/bin/time -f %e -o "$RESFILE" blender -b "$WORKDIR/blender/bmw27_cpu.blend" \
-		-o "$WORKDIR/blenderbmw.png" -f 1 --verbose 0 -t 0 &>/dev/null &
+	  -o "$WORKDIR/blenderbmw.png" -f 1 --verbose 0 -t 0 &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[11]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat "$RESFILE"
-	echo "${TNAMES[11]}: $(cat "$RESFILE")" >> "$LOGFILE"
-	return 0
+	animate 11 && return 0 || return 99
 }
 
 runxz() {
 	local RESFILE="$WORKDIR/runxz"
- 	/usr/bin/time -f %e -o "$RESFILE" xz -z -k -T${CPUCORES} -Qqq -f "$WORKDIR/firefox78.tar" &
+	/usr/bin/time -f %e -o "$RESFILE" xz -z -k -T${CPUCORES} -Qqq \
+	  -f "$WORKDIR/firefox78.tar" &
 	local PID=$!
 	echo -n -e "* ${TNAMES[12]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat "$RESFILE"
-	echo "${TNAMES[12]}: $(cat "$RESFILE")" >> "$LOGFILE"
-	return 0
+	animate 12 && return 0 || return 99
 }
 
 runkern() {
@@ -188,24 +153,17 @@ runkern() {
 	/usr/bin/time -f %e -o "$RESFILE" make -sj$CPUCORES vmlinux &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[13]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat "$RESFILE"
-	echo "${TNAMES[13]}: $(cat "$RESFILE")" >> "$LOGFILE"
-	return 0
+	animate 13 && return 0 || return 99
 }
 
 runyc() {
 	cd "$WORKDIR/y-cruncher v0.8.3.9532-static" || exit 4
 	local RESFILE="$WORKDIR/runyc"
-	/usr/bin/time -f%e -o "$RESFILE" ./y-cruncher bench 500m -od:0 -o $WORKDIR &>/dev/null &
+	/usr/bin/time -f%e -o "$RESFILE" ./y-cruncher bench 500m -od:0 \
+	  -o $WORKDIR &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[14]}:\t\t\t"
-	local s='-+'; local i=0
-	while kill -0 $PID &>/dev/null ; do i=$(( (i+1) %2 )); printf "\b${s:$i:1}"; sleep 1; done
-	printf "\b " ; cat "$RESFILE"
-	echo "${TNAMES[14]}: $(cat "$RESFILE")" >> "$LOGFILE"
-	return 0
+	animate 14 && return 0 || return 99
 }
 
 # intro text and explanation
