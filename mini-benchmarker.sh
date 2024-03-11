@@ -141,7 +141,7 @@ runblend() {
 runxz() {
 	local RESFILE="$WORKDIR/runxz"
 	/usr/bin/time -f %e -o "$RESFILE" xz -z -k -T${CPUCORES} -Qqq \
-	  -f "$WORKDIR/firefox78.tar" &
+	  -f "$WORKDIR/firefox91.tar" &
 	local PID=$!
 	echo -n -e "* ${TNAMES[12]}:\t\t\t"
 	animate 12 && return 0 || return 99
