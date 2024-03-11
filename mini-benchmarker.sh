@@ -116,10 +116,10 @@ runcray() {
 }
 
 runnamd() {
-	cd $WORKDIR/namd/NAMD_2.14_Linux-x86_64-multicore
+	cd $WORKDIR/namd/NAMD_3.0b6_Linux-x86_64-multicore
 	local RESFILE="$WORKDIR/runnamd"
 	rm -f ../apoa1/FFTW*.txt
-	/usr/bin/time -f%e -o $RESFILE ./namd2 +p${CPUCORES} +setcpuaffinity \
+	/usr/bin/time -f%e -o $RESFILE ./namd3 +p${CPUCORES} +setcpuaffinity \
 	  ../apoa1/apoa1.namd &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[10]}:\t\t\t"
@@ -374,7 +374,7 @@ checkfiles() {
 
 	if [[ ! -d $WORKDIR/namd ]]; then
 		wget --show-progress -N -qO $WORKDIR/namd.tar.gz \
-		  http://www.ks.uiuc.edu/Research/namd/2.14/download/946183/NAMD_2.14_Linux-x86_64-multicore.tar.gz
+		  http://www.ks.uiuc.edu/Research/namd/3.0b6/download/120834/NAMD_3.0b6_Linux-x86_64-multicore.tar.gz
 		wget --show-progress -N -qO $WORKDIR/namd-example.tar.gz \
 		  https://www.ks.uiuc.edu/Research/namd/utilities/apoa1.tar.gz
 		echo "--> Preparing NAMD..."
@@ -382,7 +382,7 @@ checkfiles() {
 		mkdir namd
 		tar -C namd -xf namd.tar.gz
 		tar -C namd -xf namd-example.tar.gz
-		sed -i 's/\/usr//;s/500/300/' namd/apoa1/apoa1.namd
+		sed -i 's/\/usr//;s/500/400/' namd/apoa1/apoa1.namd
 	fi
 
 	if [[ ! -d "$WORKDIR/blender" ]]; then
