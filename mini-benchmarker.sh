@@ -7,14 +7,13 @@
 #
 # In Memoriam Jonathon Fernyhough
 
-TNAMES=('stress-ng cpu-cache-mem' 'ffmpeg compilation' 'zstd compression'
+TNAMES=('stress-ng cpu-cache-mem' 'ffmpeg compilation'
 	'x265 encoding' 'argon2 hashing' 'perf sched msg fork thread'
-	'perf sched msg pipe proc' 'perf memcpy' 'calculating prime numbers'
-	'c-ray render' 'namd 92K atoms' 'blender render'
-	'xz compression' 'kernel defconfig' 'y-cruncher pi 500m')
+	'perf memcpy' 'calculating prime numbers'
+	'namd 92K atoms' 'blender render'
+	'xz compression' 'kernel defconfig' 'y-cruncher pi 1b')
 
 # animation
-
 animate() {
 	local s='-+' ; local i=0
 	while kill -0 $PID &>/dev/null
@@ -26,10 +25,9 @@ animate() {
 	echo -e "${TNAMES[$1]}: $(cat $RESFILE)" >> $LOGFILE
 }
 
-# tests definitions for mini run
-
+# tests
 runstress() {
-	local RESFILE="$WORKDIR/runstress"
+	local RESFILE="$WORKDIR/runstress" || exit 4
 	/usr/bin/time -f %e -o $RESFILE $STRESS -q --job $WORKDIR/stressC &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[0]}:\t\t"
@@ -37,7 +35,7 @@ runstress() {
 }
 
 runffm() {
-	cd $WORKDIR/ffmpeg-6.1
+	cd $WORKDIR/ffmpeg-6.1.1 || exit 4
 	local RESFILE="$WORKDIR/runffm"
 	/usr/bin/time -f %e -o $RESFILE make -s -j${CPUCORES} &>/dev/null &
 	local PID=$!
@@ -45,106 +43,78 @@ runffm() {
 	animate 1 && return 0 || return 99
 }
 
-runzstd() {
-	local RESFILE="$WORKDIR/runzstd"
-	/usr/bin/time -f %e -o $RESFILE zstd -z -k -T${CPUCORES} -16 -q \
-	  -f $WORKDIR/firefox91.tar &
+runx265() {
+	local RESFILE="$WORKDIR/runx265" || exit 4
+	/usr/bin/time -f %e -o $RESFILE x265 -p medium -b 5 -m 5 --pme -o /dev/null \
+	  --no-progress --log-level none $WORKDIR/bosphorus_hd.y4m &
 	local PID=$!
 	echo -n -e "* ${TNAMES[2]}:\t\t\t"
 	animate 2 && return 0 || return 99
 }
 
-runx265() {
-	local RESFILE="$WORKDIR/runx265"
-	/usr/bin/time -f %e -o $RESFILE x265 -p medium -b 5 -m 5 --pme -o /dev/null \
-	  --no-progress --log-level none $WORKDIR/bosphorus_hd.y4m &
+runargon() {
+	local RESFILE="$WORKDIR/runargon" || exit 4
+	/usr/bin/time -f %e -o $RESFILE argon2 BenchieSalt -id -t 16 -m 21 \
+	  -p $CPUCORES &>/dev/null <<< $(dd if=/dev/urandom bs=64 count=1 status=none) &
 	local PID=$!
 	echo -n -e "* ${TNAMES[3]}:\t\t\t"
 	animate 3 && return 0 || return 99
 }
 
-runargon() {
-	local RESFILE="$WORKDIR/runargon"
-	/usr/bin/time -f %e -o $RESFILE argon2 BenchieSalt -id -t 16 -m 21 \
-	  -p $CPUCORES &>/dev/null <<< $(dd if=/dev/urandom bs=64 count=1 status=none) &
+runperf_sch() {
+	local RESFILE="$WORKDIR/runperfs" || exit 4
+	perf bench -f simple sched messaging -t -g 24 -l 6000 1> $RESFILE &
 	local PID=$!
-	echo -n -e "* ${TNAMES[4]}:\t\t\t"
+	echo -n -e "* ${TNAMES[4]}:\t\t"
 	animate 4 && return 0 || return 99
 }
 
-runperf_sch1() {
-	local RESFILE="$WORKDIR/runperf"
-	perf bench -f simple sched messaging -t -g 24 -l 5000 1> $RESFILE &
+runperf_mem() {
+	local RESFILE="$WORKDIR/runperfm" || exit 4
+	/usr/bin/time -f %e -o $RESFILE perf bench -f simple mem memcpy --nr_loops 100 \
+	  --size 2GB -f default &>/dev/null &
 	local PID=$!
-	echo -n -e "* ${TNAMES[5]}:\t\t"
+	echo -n -e "* ${TNAMES[5]}:\t\t\t\t"
 	animate 5 && return 0 || return 99
 }
 
-runperf_sch2() {
-	local RESFILE="$WORKDIR/runperf"
-	perf bench -f simple sched messaging -p -g 24 -l 5000 1> $RESFILE &
+runprime() {
+	local RESFILE="$WORKDIR/runprime" || exit 4
+	/usr/bin/time -f%e -o $RESFILE primesieve 666000000000 --no-status | awk -F ': ' \
+	  '/Seconds/{print $2}' 1> $RESFILE &
 	local PID=$!
 	echo -n -e "* ${TNAMES[6]}:\t\t"
 	animate 6 && return 0 || return 99
 }
 
-runperf_mem() {
-	local RESFILE="$WORKDIR/runperf"
-	/usr/bin/time -f %e -o $RESFILE perf bench -f simple mem memcpy --nr_loops 100 \
-	  --size 2GB -f default &>/dev/null &
-	local PID=$!
-	echo -n -e "* ${TNAMES[7]}:\t\t\t\t"
-	animate 7 && return 0 || return 99
-}
-
-runprime() {
-	local RESFILE="$WORKDIR/runprime"
-	/usr/bin/time -f%e -o $RESFILE primesieve 500000000000 --no-status | awk -F ': ' \
-	  '/Seconds/{print $2}' 1> $RESFILE &
-	local PID=$!
-	echo -n -e "* ${TNAMES[8]}:\t\t"
-	animate 8 && return 0 || return 99
-}
-
-runcray() {
-	local RESFILE="$WORKDIR/runcray"
-	/usr/bin/time -f%e -o $RESFILE $WORKDIR/c-ray-1.1/c-ray-mt -t $(( $CPUCORES * 16 )) \
-	  -s 3200x1800 -r 8 -i $WORKDIR/c-ray-1.1/sphfract -o $WORKDIR/output.ppm 2>/dev/null &
-	local PID=$!
-	echo -n -e "* ${TNAMES[9]}:\t\t\t\t"
-	animate 9 && return 0 || return 99
-}
-
 runnamd() {
-	cd $WORKDIR/namd/NAMD_3.0b6_Linux-x86_64-multicore
+	cd $WORKDIR/namd/NAMD_3.0b6_Linux-x86_64-multicore || exit 4
 	local RESFILE="$WORKDIR/runnamd"
 	rm -f ../apoa1/FFTW*.txt
 	/usr/bin/time -f%e -o $RESFILE ./namd3 +p${CPUCORES} +setcpuaffinity \
 	  ../apoa1/apoa1.namd &>/dev/null &
 	local PID=$!
-	echo -n -e "* ${TNAMES[10]}:\t\t\t"
-	animate 10 && return 0 || return 99
+	echo -n -e "* ${TNAMES[7]}:\t\t\t"
+	animate 7 && return 0 || return 99
 }
 
-# test definitions for nano run
-
 runblend() {
-	local RESFILE="$WORKDIR/runblend"
+	local RESFILE="$WORKDIR/runblend" || exit 4
 	local BLENDER_USER_CONFIG="$WORKDIR"
 	/usr/bin/time -f %e -o "$RESFILE" blender -b "$WORKDIR/blender/bmw27_cpu.blend" \
 	  -o "$WORKDIR/blenderbmw.png" -f 1 --verbose 0 -t 0 &>/dev/null &
 	local PID=$!
-	echo -n -e "* ${TNAMES[11]}:\t\t\t"
-	animate 11 && return 0 || return 99
+	echo -n -e "* ${TNAMES[8]}:\t\t\t"
+	animate 8 && return 0 || return 99
 }
 
 runxz() {
-	local RESFILE="$WORKDIR/runxz"
+	local RESFILE="$WORKDIR/runxz" || exit 4
 	/usr/bin/time -f %e -o "$RESFILE" xz -z -k -T${CPUCORES} -Qqq \
-	  -f "$WORKDIR/firefox91.tar" &
+	  -f "$WORKDIR/firefox102.tar" &
 	local PID=$!
-	echo -n -e "* ${TNAMES[12]}:\t\t\t"
-	animate 12 && return 0 || return 99
+	echo -n -e "* ${TNAMES[9]}:\t\t\t"
+	animate 9 && return 0 || return 99
 }
 
 runkern() {
@@ -152,55 +122,52 @@ runkern() {
 	local RESFILE="$WORKDIR/runkern"
 	/usr/bin/time -f %e -o "$RESFILE" make -sj$CPUCORES vmlinux &>/dev/null &
 	local PID=$!
-	echo -n -e "* ${TNAMES[13]}:\t\t\t"
-	animate 13 && return 0 || return 99
+	echo -n -e "* ${TNAMES[10]}:\t\t\t"
+	animate 10 && return 0 || return 99
 }
 
 runyc() {
 	cd "$WORKDIR/y-cruncher v0.8.3.9532-static" || exit 4
+	rm -f "Pi*.txt"
 	local RESFILE="$WORKDIR/runyc"
-	/usr/bin/time -f%e -o "$RESFILE" ./y-cruncher bench 500m -od:0 \
+	/usr/bin/time -f%e -o "$RESFILE" ./y-cruncher bench 1b -od:0 \
 	  -o $WORKDIR &>/dev/null &
 	local PID=$!
-	echo -n -e "* ${TNAMES[14]}:\t\t\t"
-	animate 14 && return 0 || return 99
+	echo -n -e "* ${TNAMES[11]}:\t\t\t"
+	animate 11 && return 0 || return 99
 }
 
 # intro text and explanation
 intro() {
     echo -e "\n${FARBE1}${TB}MINI-BENCHMARKER: This script can take more than 30m on slow computers!${TN}\n"
-    echo -e "${FARBE3}${TB}Usage: ${TN}\$ mini-benchmarker.sh /path/to/workdir [--mini | --nano]${TN}\n"
     echo -e "${FARBE2}${TB}Explanation notes${TN}:\n"
 
-    echo -e "By default or by specifying the '--mini' parameter, this script runs"
-    echo -e "in ${TB}mini${TN} mode, running the following tests:\n"
+    echo -e "${FARBE3}${TB}stress-ng cpu-cache-mem${TN} tests sort&search, integer and floating point"
+    echo -e "arithmetics, memory and cache operations.\n"
 
-    echo -e "${FARBE3}${TB}stress-ng cpu-cache-mem${TN} tests sort&search, integer and floating"
-    echo -e "point arithmetics, memory and cache operations.\n"
-    echo -e "The ${FARBE3}${TB}C-Ray${TN} is a simple CPU-based rendering engine.\n"
-    echo -e "The ${FARBE3}${TB}perf sched${TN} benchmarks concentrate on interprocess communication"
+    echo -e "The ${FARBE3}${TB}perf sched${TN} benchmark concentrates on interprocess communication"
     echo -e "and pipelining, whereas the ${FARBE3}${TB}perf mem${TN} benchmark tries to measure raw"
     echo -e "RAM throughput speed with the libc memcpy function.\n"
+
     echo -e "The ${FARBE3}${TB}primesieve${TN} multithreaded benchmark searches for primes within the"
-    echo -e "first 5*10^11 natural numbers.\n"
-    echo -e "${FARBE3}${TB}NAMD${TN} is a multi-thread molecular dynamics simulation.\n"
-    echo -e "${FARBE3}${TB}argon2${TN} is a prized hashing algorithm. It uses 16 iterations with"
-    echo -e "2G of memory, with a fixed salt and a random password.\n"
-    echo -e "What follows are three 'real world' benchmarks, measuring ${FARBE3}${TB}compilation"
-    echo -e "of ffmpeg${TN}, ${FARBE3}${TB}zstd compression${TN} level 16 on a source code tarball,"
+    echo -e "first 6.66*10^11 natural numbers.\n"
+
+    echo -e "${FARBE3}${TB}NAMD${TN} is a multi-threaded molecular dynamics simulation.\n"
+
+    echo -e "${FARBE3}${TB}argon2${TN} is a prized hashing algorithm. It uses 16 iterations with 2G"
+    echo -e "of memory, with a fixed salt and a random password.\n"
+
+    echo -e "Several 'real world' benchmarks are available, measuring ${FARBE3}${TB}compilation"
+    echo -e "of ffmpeg and the Linux kernel${TN}, Firefox source tarball ${FARBE3}${TB}xz compression${TN}"
     echo -e "and ${FARBE3}${TB}x265 encoding${TN} of a short 1080p video clip.\n"
 
-    echo -e "By using the '--nano' parameter, it runs in ${TB}nano${TN} mode, running fewer"
-    echo -e "but heavier benchmarks, measuring ${FARBE3}${TB}kernel defconfig${TN} compilation time,"
-    echo -e "${FARBE3}${TB}xz compression${TN} level 6 of a large source code tarball,"
-    echo -e "the famous ${FARBE3}${TB}Blender${TN} BMW rendering (CPU only), and"
-    echo -e "the ${FARBE3}${TB}y-cruncher${TN} highly optimised pi calculator."
-    echo -e "The ${TB}nano${TN} mode does not apply weighting.\n"
+    echo -e "It also includes the famous${FARBE3}${TB} Blender BMW${TN} benchmark (CPU only) and the"
+    echo -e "${FARBE3}${TB}y-cruncher${TN} highly optimised pi calculator.\n"
 
-    echo -e "The ${FARBE3}${TB}score${TN} is not really relevant. It tries to compress the pure"
-    echo -e "time results using geometric mean. What counts is the ${FARBE3}${TB}total time${TN}.\n"
-    echo -e "You should ${FARBE3}${TB}run this script in runlevel 3${TN}. On Linux with systemd,"
-    echo -e "either append a '3' to the boot command line, or issue"
+    echo -e "The ${FARBE3}${TB}score${TN} is not really relevant. It tries to compress the raw time"
+    echo -e "results using geometric mean. What counts is the ${FARBE3}${TB}total time${TN}.\n"
+    echo -e "You should run this script in ${FARBE2}${TB}runlevel 3${TN}. On Linux with systemd,"
+    echo -e "either append a '3' to the boot command line, or run"
     echo -e "'systemctl isolate multi-user.target'.\n"
 }
 
@@ -212,7 +179,7 @@ killproc() {
 
 exitproc() {
 	echo -e "\n-> Removing temporary files..."
-	for i in $WORKDIR/{"run*",stressC,"*.txt",firefox78.tar.xz,"*.zst","*.7z","*.png","*.ppm"}
+	for i in $WORKDIR/{"run*",stressC,"*.txt",firefox102.tar.xz,"*.zst","*.7z","*.png","*.ppm"}
 		do rm -f $i
 	done
 	rm $(echo $LOCKFILE) && echo -e "${TB}Bye!${TN}\n"
@@ -222,14 +189,13 @@ exitproc() {
 export LANG=C
 CURRDIR=$(pwd)
 TMP="/tmp"
-VER="v2.0"
+VER="v2.1"
 CDATE=$(date +%F-%H%M)
 RAMSIZE=$(awk '/MemTotal/{print int($2 / 1000)}' /proc/meminfo)
 CPUCORES=$(nproc)
-CPUGOV=$(cat /sys/devices/system/cpu/cpufreq/policy0/scaling_governor)
 CPUFREQ=$(awk '{print $1 / 1000000}' /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq)
 COEFF="$(python -c "print(round((($CPUCORES+1)/2 + $CPUFREQ) ** (1/3),4))")"
-KERNVER="6.1.65"
+KERNVER="6.6.26"
 STRESSVER="0.17.06"
 # system info will be logged
 SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/RAM Report:.*//;/^\s*$/d")
@@ -262,8 +228,6 @@ if [[ ! -d "$WORKDIR" ]] ; then
 	[[ $DCHOICE = "y" || $DCHOICE = "Y" ]] && mkdir -p $WORKDIR || exit 4
 fi
 
-[[ -z $2 ]] && CMDOPT="--mini" || CMDOPT="$2"
-
 # check files function
 checkfiles() {
 	echo -e "\n${TB}Checking, downloading and preparing test files...${TN}"
@@ -282,7 +246,7 @@ checkfiles() {
 	cat >> $WORKDIR/stressC <<- EOF
 	sparsematrix CPUCORES
 	sparsematrix-method hash
-	sparsematrix-items 12000
+	sparsematrix-items 15000
 	EOF
 	echo "sparsematrix-ops $((2400 / ${CPUCORES}))" >> $WORKDIR/stressC
 	cat >> $WORKDIR/stressC <<- EOF
@@ -319,23 +283,16 @@ checkfiles() {
 	echo "qsort-ops $((2400 / ${CPUCORES}))" >> $WORKDIR/stressC
 	cat >> $WORKDIR/stressC <<- EOF
 	memfd CPUCORES
-	memfd-bytes 64m
+	memfd-bytes 128m
 	memfd-fds 128
 	EOF
 	echo "memfd-ops $((2400 / ${CPUCORES}))" >> $WORKDIR/stressC
+	cat >> $WORKDIR/stressC <<- EOF
+	epoll CPUCORES
+	EOF
+	echo "epoll-ops $((12000 / ${CPUCORES}))" >> $WORKDIR/stressC
 
 	sed -i "s/CPUCORES/$CPUCORES/g" $WORKDIR/stressC
-
-	if [[ ! -x $WORKDIR/c-ray-1.1/c-ray-mt ]] ; then
-		wget --show-progress -N -qO $WORKDIR/c-ray.tar.gz \
-		  https://www.phoronix-test-suite.com/benchmark-files/c-ray-1.1.tar.gz
-		echo "--> Compiling C-Ray..."
-		cd $WORKDIR
-		tar xf c-ray.tar.gz
-		cd c-ray-1.1
-		make -s clean
-		gcc -O3 -march=native -ffast-math -lm -lpthread -o c-ray-mt c-ray-mt.c
-	fi
 
 	if [[ ! -f $WORKDIR/bosphorus_hd.y4m ]] ; then
 		wget --show-progress -N -qO $WORKDIR/bosphorus_hd.7z \
@@ -355,7 +312,7 @@ checkfiles() {
 			  https://github.com/ColinIanKing/stress-ng/archive/refs/tags/V$STRESSVER.tar.gz
 			echo "--> Preparing stress-ng..."
 			cd $WORKDIR
-			tar xf stress-ng.tar.gz
+			tar -xf stress-ng.tar.gz
 			cd stress-ng-$STRESSVER
 			make -s -j${CPUCORES} &>/dev/null
 			make -s DESTDIR=$WORKDIR/stress-ng install &>/dev/null
@@ -364,12 +321,12 @@ checkfiles() {
 		STRESS=${WORKDIR}/stress-ng/usr/bin/stress-ng
 	fi
 
-	if [[ ! -d $WORKDIR/ffmpeg-6.1 ]]; then
+	if [[ ! -d $WORKDIR/ffmpeg-6.1.1 ]]; then
 		wget --show-progress -N -qO $WORKDIR/ffmpeg.tar.xz \
-		  https://ffmpeg.org/releases/ffmpeg-6.1.tar.xz
+		  https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.xz
 		echo "--> Preparing ffmpeg..."
 		cd $WORKDIR
-		tar xf ffmpeg.tar.xz
+		tar -xf ffmpeg.tar.xz
 	fi
 
 	if [[ ! -d $WORKDIR/namd ]]; then
@@ -392,11 +349,11 @@ checkfiles() {
 		unzip -qqj "$WORKDIR/blender.zip" -d "$WORKDIR/blender"
 	fi
 
-	if [[ ! -f $WORKDIR/firefox91.tar ]]; then
-		wget --show-progress -N -qO $WORKDIR/firefox91.tar.xz \
-		  http://ftp.mozilla.org/pub/firefox/releases/91.13.0esr/source/firefox-91.13.0esr.source.tar.xz
+	if [[ ! -f $WORKDIR/firefox102.tar ]]; then
+		wget --show-progress -N -qO $WORKDIR/firefox102.tar.xz \
+		  http://ftp.mozilla.org/pub/firefox/releases/102.9.0esr/source/firefox-102.9.0esr.source.tar.xz
 		echo "--> Unzipping Firefox tarball..."
-		xz -d -q $WORKDIR/firefox91.tar.xz
+		xz -d -q $WORKDIR/firefox102.tar.xz
 	fi
 
 	if [[ ! -d "$WORKDIR/linux-$KERNVER" ]]; then
@@ -415,53 +372,39 @@ checkfiles() {
 		tar -xf y-cruncher.tar.xz
 	fi
 
-	# prepare kernel in nano mode
-	if [[ "$CMDOPT" == "--nano" ]] ; then
-		echo -e "\n${TB}Preparing kernel source...${TN}"
-		cd "$WORKDIR/linux-$KERNVER" || exit 4
-		make -s mrproper && make -s defconfig
-	fi
+	echo -e "\n${TB}Preparing kernel source...${TN}"
+	cd "$WORKDIR/linux-$KERNVER" || exit 4
+	make -s distclean && make -s defconfig
 
-	# prepare ffmpeg in mini mode
-	if [[ "$CMDOPT" != "--nano" ]] ; then
-		echo -e "\n${TB}Preparing ffmpeg source...${TN}"
-		cd "$WORKDIR/ffmpeg-6.1" || exit 4
-		make -s distclean &>/dev/null
-		./configure --prefix=$TMP --disable-debug --enable-static \
-		    --enable-gpl --enable-version3 --disable-ffplay --disable-ffprobe \
-		    --disable-doc --disable-network --disable-protocols \
-		    --enable-zlib --enable-libdrm --enable-alsa \
-		    --disable-stripping --disable-autodetect --cpu=native &>/dev/null
-	fi
+	echo -e "\n${TB}Preparing ffmpeg source...${TN}"
+	cd "$WORKDIR/ffmpeg-6.1.1" || exit 4
+	make -s distclean &>/dev/null
+	./configure --prefix=$TMP --disable-debug --enable-static \
+	    --enable-gpl --enable-version3 --disable-ffplay --disable-ffprobe \
+	    --disable-doc --disable-network --disable-protocols \
+	    --enable-zlib --enable-libdrm --disable-stripping \
+	    --disable-autodetect --cpu=native &>/dev/null
 }
 
 checksys() {
 	# ask user for dropping page cache
 	echo -e "\n"
 	read -p "Do you want to drop page cache now? Root priviledges needed! (y/N) " DCHOICE
-	[[ $DCHOICE = "y" || $DCHOICE = "Y" ]] && su -c "echo 1 > /proc/sys/vm/drop_caches"
+	[[ $DCHOICE = "y" || $DCHOICE = "Y" ]] && sync && su -c "echo 1 > /proc/sys/vm/drop_caches"
 
-	# ask user for permission to choose performance gov
-	if [[ $CPUGOV != "performance" ]] ; then
-		read -p "You should use the ${TB}performance${TN} cpufreq governor, enable now? (y/N) " DCHOICE
-		[[ $DCHOICE = "y" || $DCHOICE = "Y" ]] && su -c "cpupower frequency-set -g performance &>/dev/null"
-	fi
+	# results will be written to this file
+	LOGFILE="$WORKDIR/benchie_${CDATE}.log"
+	# lockfile has no real purpose here but it's cool
+	LOCKFILE=$(mktemp $WORKDIR/benchie.XXXX)
 
 	# traps (ctrl-c)
 	trap killproc INT
 	trap exitproc EXIT
 }
 
-logging() {
-	# results will be written to this file
-	LOGFILE="$WORKDIR/benchie_${CDATE}.log"
-	# lockfile has no real purpose here but it's cool
-	LOCKFILE=$(mktemp $WORKDIR/benchie.XXXX)
-}
-
 # print header
 header() {
-	echo -e "\n${TB}Starting in ${CMDOPT/--/} mode...${TN}\n" ; sync ; sleep 2
+	echo -e "\n${TB}Starting...${TN}\n" ; sync ; sleep 2
 
 	echo -e "__________________________________________________"
 	echo -e "=====${TB}__${TN}==${TB}__${TN} ===========================${TB}_____${TN} ====="
@@ -472,33 +415,21 @@ header() {
 }
 
 # run
-case $CMDOPT in
-	'--mini')
-	    NRTESTS=11
-	    declare -a WEIGHTS=(0.9 0.8 0.95 0.95 0.85 0.9 0.9 0.8 1 1 1)
-	    checkfiles ; checksys ; logging ; header
-	    runstress ; sleep 2
-	    runcray ; sleep 2
-	    runperf_sch1 ; sleep 2
-	    runperf_sch2 ; sleep 2
-	    runperf_mem ; sleep 2
-	    runnamd ; sleep 2
-	    runprime ; sleep 2
-	    runargon ; sleep 2
-	    runffm ; sleep 2
-	    runzstd ; sleep 2
-	    runx265 ; sleep 2 ;;
-	'--nano')
-	    NRTESTS=4 ;
-	    declare -a WEIGHTS=(1 1 1 1)
-	    checkfiles ; checksys ; logging ; header
-	    runyc ; sleep 2
-	    runkern ; sleep 2
-	    runxz ; sleep 2
-	    runblend ; sleep 2 ;;
-	*)
-	    intro && exit 0 ;;
-esac
+    NRTESTS=12
+    declare -a WEIGHTS=(0.9 0.85 0.95 0.85 0.8 0.85 0.8 1 0.95 0.95 0.95 1)
+    checkfiles ; checksys ; header
+    runstress ; sleep 2
+    runyc ; sleep 2
+    runperf_sch ; sleep 2
+    runperf_mem ; sleep 2
+    runnamd ; sleep 2
+    runprime ; sleep 2
+    runargon ; sleep 2
+    runffm ; sleep 2
+    runxz ; sleep 2
+    runkern ; sleep 2
+    runblend ; sleep 2
+    runx265 ; sleep 2
 
 # time and score calculations, print and log final results
 unset ARRAYTIME ; unset ARRAY
@@ -522,7 +453,6 @@ echo -n "Total score, lower is better" ; echo " [multi = $COEFF]:"
 echo "--------------------------------------------------"
 echo "  ${TB}$SCORE${TN}" ; echo "Total score: $SCORE" >> $LOGFILE
 echo "=================================================="
-echo -e "\nMode: ${CMDOPT/--/}" >> $LOGFILE
 echo -e "\nDate: ${CDATE}" >> $LOGFILE
 echo -e "\n$SYSINFO" >> $LOGFILE
 
