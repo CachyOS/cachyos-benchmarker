@@ -140,6 +140,7 @@ runyc() {
 # intro text and explanation
 intro() {
     echo -e "\n${FARBE1}${TB}MINI-BENCHMARKER: This script can take more than 30m on slow computers!${TN}\n"
+    echo -e "${TB}Usage:${TN} mini-benchmarker.sh /path/to/workdir\n"
     echo -e "${FARBE2}${TB}Explanation notes${TN}:\n"
 
     echo -e "${FARBE3}${TB}stress-ng cpu-cache-mem${TN} tests sort&search, integer and floating point"
@@ -195,7 +196,7 @@ RAMSIZE=$(awk '/MemTotal/{print int($2 / 1000)}' /proc/meminfo)
 CPUCORES=$(nproc)
 CPUFREQ=$(awk '{print $1 / 1000000}' /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq)
 COEFF="$(python -c "print(round((($CPUCORES+1)/2 + $CPUFREQ) ** (1/3),4))")"
-KERNVER="6.6.26"
+KERNVER="6.1.85"
 STRESSVER="0.17.06"
 # system info will be logged
 SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/RAM Report:.*//;/^\s*$/d")
@@ -287,10 +288,6 @@ checkfiles() {
 	memfd-fds 128
 	EOF
 	echo "memfd-ops $((2400 / ${CPUCORES}))" >> $WORKDIR/stressC
-	cat >> $WORKDIR/stressC <<- EOF
-	epoll CPUCORES
-	EOF
-	echo "epoll-ops $((12000 / ${CPUCORES}))" >> $WORKDIR/stressC
 
 	sed -i "s/CPUCORES/$CPUCORES/g" $WORKDIR/stressC
 
