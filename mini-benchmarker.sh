@@ -45,7 +45,7 @@ runffm() {
 
 runx265() {
 	local RESFILE="$WORKDIR/runx265" || exit 4
-	/usr/bin/time -f %e -o $RESFILE x265 -p medium -b 5 -m 5 --pme -o /dev/null \
+	/usr/bin/time -f %e -o $RESFILE x265 -p slow -b 6 -o /dev/null \
 	  --no-progress --log-level none $WORKDIR/bosphorus_hd.y4m &
 	local PID=$!
 	echo -n -e "* ${TNAMES[2]}:\t\t\t"
