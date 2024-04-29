@@ -413,7 +413,7 @@ header() {
 
 # run
     NRTESTS=12
-    declare -a WEIGHTS=(0.9 0.85 0.95 0.85 0.8 0.85 0.8 1 0.95 0.95 0.95 1)
+    declare -a WEIGHTS=(0.9 0.9 0.9 0.85 0.85 0.8 0.8 0.95 0.95 1 0.95 1)
     checkfiles ; checksys ; header
     runstress ; sleep 2
     runyc ; sleep 2
