@@ -412,21 +412,21 @@ header() {
 }
 
 # run
-    NRTESTS=12
-    declare -a WEIGHTS=(0.9 0.9 0.9 0.85 0.85 0.8 0.8 0.95 0.95 1 0.95 1)
-    checkfiles ; checksys ; header
-    runstress ; sleep 2
-    runyc ; sleep 2
-    runperf_sch ; sleep 2
-    runperf_mem ; sleep 2
-    runnamd ; sleep 2
-    runprime ; sleep 2
-    runargon ; sleep 2
-    runffm ; sleep 2
-    runxz ; sleep 2
-    runkern ; sleep 2
-    runblend ; sleep 2
-    runx265 ; sleep 2
+NRTESTS=12
+declare -a WEIGHTS=(0.9 0.9 0.9 0.85 0.85 0.8 0.8 0.95 0.95 1 0.95 1)
+checkfiles && checksys && header || exit 8
+runstress && sleep 2 || exit 8
+runyc && sleep 2 || exit 8
+runperf_sch && sleep 2 || exit 8
+runperf_mem && sleep 2 || exit 8
+runnamd && sleep 2 || exit 8
+runprime && sleep 2 || exit 8
+runargon && sleep 2 || exit 8
+runffm && sleep 2 || exit 8
+runxz && sleep 2 || exit 8
+runkern && sleep 2 || exit 8
+runblend && sleep 2 || exit 8
+runx265 && sleep 2 || exit 8
 
 # time and score calculations, print and log final results
 unset ARRAYTIME ; unset ARRAY
