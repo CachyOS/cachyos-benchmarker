@@ -19,7 +19,7 @@ The scraper makes it possible to visulize the benchmarks.
 
 - Geekbench: Request in benchmark, if its wanted to run geekbench and then print the URL into Logfile
 - schbench: Add schbench and parse the result into logfile for scheduler latency benchmarking
-
+- scx: Add detection for current running scx scheduler and parse it into logfile - maybe the 
 
 
 # Credits
