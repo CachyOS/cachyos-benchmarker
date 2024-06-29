@@ -453,7 +453,7 @@ echo "=================================================="
 echo -e "\nDate: ${CDATE}" >> $LOGFILE
 echo -e "\n$SYSINFO" >> $LOGFILE
 
-python benchmark_scraper.py
+python /usr/bin/benchmark_scraper.py
 
 exit 0
 
