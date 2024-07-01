@@ -51,9 +51,13 @@ def plot_horizontal_bar_chart_with_annotations(average_times, mode, kernel_versi
     test_names = list(average_times[0].keys())
     test_names.reverse()
     num_kernel_versions = len(average_times)
-    
+
     fig, axes = plt.subplots(num_kernel_versions, 1, figsize=(12, num_kernel_versions * 4))
-    
+
+    # Reverse the order of average_times and kernel_versions
+    average_times = average_times[::-1]
+    kernel_versions = kernel_versions[::-1]
+
     for i, avg_times in enumerate(average_times):
         kernel_version = kernel_versions[i]
         ax = axes[i] if num_kernel_versions > 1 else axes
@@ -65,7 +69,7 @@ def plot_horizontal_bar_chart_with_annotations(average_times, mode, kernel_versi
         ax.set_ylabel('Mini-Benchmarker')
         ax.set_title(f'Test Performance - Kernel Version: {kernel_version} ({mode} mode)')
         ax.grid(axis='x')
-    
+
     plt.tight_layout()
     plt.savefig(f'average_performance_comparison_horizontal_{mode}.png')
     plt.close()
@@ -104,9 +108,12 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     ax.set_xlabel('Average Time (s). Less is better')
     ax.set_ylabel('Mini-Benchmarker')
     ax.set_title(f'Test Performance Comparison Between Different Kernel Versions ({mode} mode)')
-    ax.legend(loc='lower right')
+
+    # Reverse the order of the legend entries
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], labels[::-1], loc='lower right')
     ax.grid(axis='x')
-    
+
     plt.tight_layout()
     plt.savefig(f'kernel_version_comparison_{mode}.png')
     plt.close()
