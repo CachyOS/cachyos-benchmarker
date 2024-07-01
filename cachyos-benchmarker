@@ -457,7 +457,7 @@ echo "  ${TB}$SCORE${TN}" ; echo "Total score: $SCORE" >> $LOGFILE
 echo "=================================================="
 echo -e "\nDate: ${CDATE}" >> $LOGFILE
 echo -e "\n$SYSINFO" >> $LOGFILE
-ehco -e "\nSCX Scheduler: ${SCX}" >> $LOGFILE
+echo -e "\nSCX Scheduler: ${SCX}" >> $LOGFILE
 
 cd "$WORKDIR"
 python /usr/bin/benchmark_scraper.py
