@@ -84,26 +84,29 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     num_tests = len(test_names)
     num_kernel_versions = len(kernel_versions)
 
-    # Calculate the figsize based on the number of tests and kernel versions
-    fig_width = 12  # base width
-    fig_height = num_tests + num_kernel_versions  # base height
+    # Dynamically adjust the figure height based on the number of tests and kernel versions
+    base_height_per_test = 0.7  # Base height per test
+    additional_height_per_kernel = 1.8  # Additional height per kernel version
+    fig_height = base_height_per_test * num_tests + additional_height_per_kernel * num_kernel_versions
+
+    fig_width = 12  # Keep the width fixed
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
 
-    # Calculate the width of each bar based on the number of kernel versions
-    bar_width = 0.9 / num_kernel_versions  # Adjust this value as needed
+    # Calculate the height of each bar
+    bar_height = 0.8 / num_kernel_versions  # Ensure the bars fit within the allocated space for each test
 
-    # Calculate font size based on num_kernel_versions
-    font_size = 16 - num_kernel_versions * 0.24
+    # Adjust font size based on the number of kernel versions
+    font_size = max(6, 16 - num_kernel_versions * 0.5)  # Minimum font size of 6
 
     for i, avg_times in enumerate(average_times):
         kernel_version = kernel_versions[i]
         values = list(avg_times.values())[::-1]
-        color = colors[i % len(colors)]  # Use modulo to loop through the color palette
-        ax.barh(np.arange(num_tests) + i * bar_width, values, height=bar_width, label=kernel_version, color=color)
+        color = mcolors.TABLEAU_COLORS[list(mcolors.TABLEAU_COLORS.keys())[i % len(mcolors.TABLEAU_COLORS)]]
+        ax.barh(np.arange(num_tests) + i * bar_height, values, height=bar_height, label=kernel_version, color=color)
         for j, value in enumerate(values):
-            ax.text(value, j + i * bar_width, f'{value:.2f}', fontsize=font_size, ha='left', va='center', color='black')
+            ax.text(value, j + i * bar_height, f'{value:.2f}', fontsize=font_size, ha='left', va='center', color='black')
 
-    ax.set_yticks(np.arange(num_tests))
+    ax.set_yticks(np.arange(num_tests) + bar_height * (num_kernel_versions - 1) / 2)
     ax.set_yticklabels(test_names)
     ax.set_xlabel('Average Time (s). Less is better')
     ax.set_ylabel('Mini-Benchmarker')
