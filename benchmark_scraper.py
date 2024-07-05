@@ -101,7 +101,7 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     for i, avg_times in enumerate(average_times):
         kernel_version = kernel_versions[i]
         values = list(avg_times.values())[::-1]
-        color = mcolors.TABLEAU_COLORS[list(mcolors.TABLEAU_COLORS.keys())[i % len(mcolors.TABLEAU_COLORS)]]
+        color = colors[i % len(colors)]  # Use modulo to loop through the color palette
         ax.barh(np.arange(num_tests) + i * bar_height, values, height=bar_height, label=kernel_version, color=color)
         for j, value in enumerate(values):
             ax.text(value, j + i * bar_height, f'{value:.2f}', fontsize=font_size, ha='left', va='center', color='black')
