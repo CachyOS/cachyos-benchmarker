@@ -54,8 +54,8 @@ runx265() {
 
 runargon() {
 	local RESFILE="$WORKDIR/runargon" || exit 4
-	/usr/bin/time -f %e -o $RESFILE argon2 BenchieSalt -id -t 16 -m 21 \
-	  -p $CPUCORES &>/dev/null <<< $(dd if=/dev/urandom bs=64 count=1 status=none) &
+	/usr/bin/time -f %e -o $RESFILE argon2 BenchieSalt -id -t 20 -m 21 \
+	  -p $CPUCORES &>/dev/null <<< $(head -c 64 /dev/urandom) &
 	local PID=$!
 	echo -n -e "* ${TNAMES[3]}:\t\t\t"
 	animate 3 && return 0 || return 99
