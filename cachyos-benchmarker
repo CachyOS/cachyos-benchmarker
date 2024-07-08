@@ -28,7 +28,7 @@ animate() {
 # tests
 runstress() {
 	local RESFILE="$WORKDIR/runstress" || exit 4
-	/usr/bin/time -f %e -o $RESFILE $STRESS -q --job $WORKDIR/stressC &>/dev/null &
+	/usr/bin/time -f %e -o $RESFILE stress-ng -q --job $WORKDIR/stressC &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[0]}:\t\t"
 	animate 0 && return 0 || return 99
