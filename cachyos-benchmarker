@@ -101,8 +101,8 @@ runnamd() {
 runblend() {
 	local RESFILE="$WORKDIR/runblend" || exit 4
 	local BLENDER_USER_CONFIG="$WORKDIR"
-	/usr/bin/time -f %e -o "$RESFILE" blender -b "$WORKDIR/blender/bmw27_cpu.blend" \
-	  -o "$WORKDIR/blenderbmw.png" -f 1 --verbose 0 -t 0 &>/dev/null &
+	/usr/bin/time -f %e -o "$RESFILE" blender -b "$WORKDIR/bmw_cpu_mod.blend" \
+	  -o "$WORKDIR/blenderbmw.jpg" -f 1 --verbose 0 -t 0 &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[8]}:\t\t\t"
 	animate 8 && return 0 || return 99
@@ -162,8 +162,8 @@ intro() {
     echo -e "of ffmpeg and the Linux kernel${TN}, Firefox source tarball ${FARBE3}${TB}xz compression${TN}"
     echo -e "and ${FARBE3}${TB}x265 encoding${TN} of a short 1080p video clip.\n"
 
-    echo -e "It also includes the famous${FARBE3}${TB} Blender BMW${TN} benchmark (CPU only) and the"
-    echo -e "${FARBE3}${TB}y-cruncher${TN} highly optimised pi calculator.\n"
+    echo -e "It also includes the famous and slightly modified ${FARBE3}${TB}Blender BMW${TN} benchmark"
+    echo -e "(CPU only) and the ${FARBE3}${TB}y-cruncher${TN} highly optimised pi calculator.\n"
 
     echo -e "The ${FARBE3}${TB}score${TN} is not really relevant. It tries to compress the raw time"
     echo -e "results using geometric mean. What counts is the ${FARBE3}${TB}total time${TN}.\n"
@@ -180,7 +180,7 @@ killproc() {
 
 exitproc() {
 	echo -e "\n-> Removing temporary files..."
-	for i in $WORKDIR/{"run*",stressC,"*.txt",firefox102.tar.xz,"*.zst","*.7z","*.png","*.ppm"}
+	for i in $WORKDIR/{"run*",stressC,"*.txt",firefox102.tar.xz,"*.zst","*.7z","*.jpg","*.ppm"}
 		do rm -f $i
 	done
 	rm $(echo $LOCKFILE) && echo -e "${TB}Bye!${TN}\n"
@@ -326,11 +326,9 @@ checkfiles() {
 		sed -i 's/\/usr//;s/500/400/' namd/apoa1/apoa1.namd
 	fi
 
-	if [[ ! -d "$WORKDIR/blender" ]]; then
-		wget --show-progress -N -qO "$WORKDIR/blender.zip" \
-		  https://download.blender.org/demo/test/BMW27_2.blend.zip
-		echo "--> Unzipping Blender demo file..."
-		unzip -qqj "$WORKDIR/blender.zip" -d "$WORKDIR/blender"
+	if [[ ! -f "$WORKDIR/bmw_cpu_mod.blend" ]]; then
+		wget --show-progress -N -qO "$WORKDIR/bmw_cpu_mod.blend" \
+		  https://gitlab.com/torvic9/mini-benchmarker/-/raw/master/bmw_cpu_mod.blend
 	fi
 
 	if [[ ! -f $WORKDIR/firefox102.tar ]]; then
