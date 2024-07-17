@@ -102,7 +102,7 @@ runblend() {
 	local RESFILE="$WORKDIR/runblend" || exit 4
 	local BLENDER_USER_CONFIG="$WORKDIR"
 	/usr/bin/time -f %e -o "$RESFILE" blender -b "$WORKDIR/bmw_cpu_mod.blend" \
-	  -o "$WORKDIR/blenderbmw.jpg" -f 1 --verbose 0 -t 0 &>/dev/null &
+	  -o "$WORKDIR/blenderbmw.jpg" -f 1 --verbose 0 -t ${CPUCORES} &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[8]}:\t\t\t"
 	animate 8 && return 0 || return 99
@@ -127,7 +127,7 @@ runkern() {
 }
 
 runyc() {
-	cd "$WORKDIR/y-cruncher v0.8.3.9532-static" || exit 4
+	cd "$WORKDIR/y-cruncher v0.8.5.9541-static" || exit 4
 	rm -f "Pi*.txt"
 	local RESFILE="$WORKDIR/runyc"
 	/usr/bin/time -f%e -o "$RESFILE" ./y-cruncher bench 1b -od:0 \
@@ -346,9 +346,9 @@ checkfiles() {
 		tar -xf linux-$KERNVER.tar.xz
 	fi
 
-	if [[ ! -d "$WORKDIR/y-cruncher v0.8.3.9532-static" ]]; then
+	if [[ ! -d "$WORKDIR/y-cruncher v0.8.5.9541-static" ]]; then
 		wget --show-progress -N -qO "$WORKDIR/y-cruncher.tar.xz" \
-		  http://numberworld.org/y-cruncher/"y-cruncher%20v0.8.3.9532-static.tar.xz"
+		  http://numberworld.org/y-cruncher/"y-cruncher%20v0.8.5.9541-static.tar.xz"
 		echo "--> Uncompressing y-cruncher..."
 		cd "$WORKDIR"
 		tar -xf y-cruncher.tar.xz
