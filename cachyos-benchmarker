@@ -35,7 +35,7 @@ runstress() {
 }
 
 runffm() {
-	cd $WORKDIR/ffmpeg-6.1.1 || exit 4
+	cd $WORKDIR/ffmpeg-7.0.1 || exit 4
 	local RESFILE="$WORKDIR/runffm"
 	/usr/bin/time -f %e -o $RESFILE make -s -j${CPUCORES} &>/dev/null &
 	local PID=$!
@@ -305,9 +305,9 @@ checkfiles() {
 		mv Bosphorus_1920x1080_120fps_420_8bit_YUV.y4m bosphorus_hd.y4m
 	fi
 
-	if [[ ! -d $WORKDIR/ffmpeg-6.1.1 ]]; then
+	if [[ ! -d $WORKDIR/ffmpeg-7.0.1 ]]; then
 		wget --show-progress -N -qO $WORKDIR/ffmpeg.tar.xz \
-		  https://ffmpeg.org/releases/ffmpeg-6.1.1.tar.xz
+		  https://ffmpeg.org/releases/ffmpeg-7.0.1.tar.xz
 		echo "--> Preparing ffmpeg..."
 		cd $WORKDIR
 		tar -xf ffmpeg.tar.xz
@@ -361,12 +361,12 @@ checkfiles() {
 	make -s distclean && make -s defconfig
 
 	echo -e "\n${TB}Preparing ffmpeg source...${TN}"
-	cd "$WORKDIR/ffmpeg-6.1.1" || exit 4
+	cd "$WORKDIR/ffmpeg-7.0.1" || exit 4
 	make -s distclean &>/dev/null
 	./configure --prefix=$TMP --disable-debug --enable-static \
 	    --enable-gpl --enable-version3 --disable-ffplay --disable-ffprobe \
-	    --disable-doc --disable-network --disable-protocols \
-	    --enable-zlib --enable-libdrm --disable-stripping \
+	    --disable-programs --disable-doc --disable-network --disable-protocols \
+	    --disable-filters --disable-iconv --enable-libdrm --disable-stripping \
 	    --disable-autodetect --cpu=native &>/dev/null
 }
 
