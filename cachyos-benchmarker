@@ -202,6 +202,7 @@ STRESSVER="0.17.06"
 SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/RAM Report:.*//;/^\s*$/d")
 if [ -f /sys/kernel/sched_ext/root/ops ]; then
     SCX=$(cat /sys/kernel/sched_ext/root/ops)
+    SCX_VERSION=$(scx_$SCX --version)
 else
     SCX="none"
 fi
@@ -458,6 +459,7 @@ echo "=================================================="
 echo -e "\nDate: ${CDATE}" >> $LOGFILE
 echo -e "\n$SYSINFO" >> $LOGFILE
 echo -e "\nSCX Scheduler: ${SCX}" >> $LOGFILE
+echo -e "\nSCX Version: ${SCX}" >> $LOGFILE
 
 cd "$WORKDIR"
 python /usr/bin/benchmark_scraper.py
