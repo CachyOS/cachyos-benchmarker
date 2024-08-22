@@ -127,7 +127,7 @@ runkern() {
 }
 
 runyc() {
-	cd "$WORKDIR/y-cruncher v0.8.5.9541-static" || exit 4
+	cd "$WORKDIR/y-cruncher v0.8.5.9543-static" || exit 4
 	rm -f "Pi*.txt"
 	local RESFILE="$WORKDIR/runyc"
 	/usr/bin/time -f%e -o "$RESFILE" ./y-cruncher bench 1b -od:0 \
