@@ -205,6 +205,7 @@ if [ -f /sys/kernel/sched_ext/root/ops ]; then
 else
     SCX="none"
 fi
+VERSION=$(pacman -Qi cachyos-benchmarker | grep "Version         :")
 # allow more open files, needed by perf bench msg
 ulimit -n 4096
 # check system memory
@@ -439,6 +440,7 @@ echo -e "\nDate: ${CDATE}" >> $LOGFILE
 echo -e "\n$SYSINFO" >> $LOGFILE
 echo -e "\nSCX Scheduler: ${SCX}" >> $LOGFILE
 echo -e "\nSCX Version: ${SCX}" >> $LOGFILE
+echo -e "\n ${VERSION}" >> $LOGFILE
 
 cd "$WORKDIR"
 python /usr/bin/benchmark_scraper.py
