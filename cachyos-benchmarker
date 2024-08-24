@@ -347,9 +347,9 @@ checkfiles() {
 		tar -xf linux-$KERNVER.tar.xz
 	fi
 
-	if [[ ! -d "$WORKDIR/y-cruncher v0.8.5.9541-static" ]]; then
+	if [[ ! -d "$WORKDIR/y-cruncher v0.8.5.9543-static" ]]; then
 		wget --show-progress -N -qO "$WORKDIR/y-cruncher.tar.xz" \
-		  http://numberworld.org/y-cruncher/"y-cruncher%20v0.8.5.9541-static.tar.xz"
+		  http://numberworld.org/y-cruncher/"y-cruncher%20v0.8.5.9543-static.tar.xz"
 		echo "--> Uncompressing y-cruncher..."
 		cd "$WORKDIR"
 		tar -xf y-cruncher.tar.xz
