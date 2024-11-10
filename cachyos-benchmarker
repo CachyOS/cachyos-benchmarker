@@ -190,7 +190,7 @@ exitproc() {
 export LANG=C
 CURRDIR=$(pwd)
 TMP="/tmp"
-VER="v2.1"
+VER="v2.2"
 CDATE=$(date +%F-%H%M)
 RAMSIZE=$(awk '/MemTotal/{print int($2 / 1000)}' /proc/meminfo)
 CPUCORES=$(nproc)
@@ -198,7 +198,7 @@ CPUFREQ=$(awk '{print $1 / 1000000}' /sys/devices/system/cpu/cpufreq/policy0/cpu
 COEFF="$(python -c "print(round((($CPUCORES + 1) / 2 * $CPUFREQ / 2) ** (1/3),2))")"
 KERNVER="6.6.40"
 # system info will be logged
-SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/RAM Report:.*//;/^\s*$/d")
+SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/Array.*:.*//;/^\s*$/d")
 if [ -f /sys/kernel/sched_ext/root/ops ]; then
     SCX=$(cat /sys/kernel/sched_ext/root/ops)
     SCX_VERSION=$(scx_$SCX --version)
@@ -375,10 +375,12 @@ checksys() {
 	read -p "Do you want to drop page cache now? Root priviledges needed! (y/N) " DCHOICE
 	[[ $DCHOICE = "y" || $DCHOICE = "Y" ]] && sync && su -c "echo 1 > /proc/sys/vm/drop_caches"
 
-	# results will be written to this file
-	LOGFILE="$WORKDIR/benchie_${CDATE}.log"
-	# lockfile has no real purpose here but it's cool
 	LOCKFILE=$(mktemp $WORKDIR/benchie.XXXX)
+
+	read -p "Please enter a name for this run, or leave empty for default: " NCHOICE
+	[[ -z $NCHOICE ]] && NCHOICE="$USER@$HOSTNAME-${LOCKFILE#*benchie.}"
+	# results will be written to this file
+	LOGFILE="$WORKDIR/benchie_${NCHOICE}_${CDATE}.log"
 
 	# traps (ctrl-c)
 	trap killproc INT
@@ -436,7 +438,9 @@ echo -n "Total score, lower is better" ; echo " [multi = $COEFF]:"
 echo "--------------------------------------------------"
 echo "  ${TB}$SCORE${TN}" ; echo "Total score: $SCORE" >> $LOGFILE
 echo "=================================================="
-echo -e "\nDate: ${CDATE}" >> $LOGFILE
+
+echo -e "\nName: ${NCHOICE}" >> $LOGFILE
+echo -e "Date: ${CDATE}" >> $LOGFILE
 echo -e "\n$SYSINFO" >> $LOGFILE
 echo -e "\nSCX Scheduler: ${SCX}" >> $LOGFILE
 echo -e "\nSCX Version: ${SCX}" >> $LOGFILE
