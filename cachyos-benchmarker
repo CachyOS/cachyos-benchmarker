@@ -140,7 +140,7 @@ runyc() {
 # intro text and explanation
 intro() {
     echo -e "\n${FARBE1}${TB}MINI-BENCHMARKER: This script can take a very long time on slow computers!${TN}\n"
-    echo -e "${TB}Usage:${TN} mini-benchmarker.sh /path/to/workdir\n"
+    echo -e "${TB}Usage:${TN} cachyos-benchmarker /path/to/workdir\n"
     echo -e "${FARBE2}${TB}Explanation notes${TN}:\n"
 
     echo -e "${FARBE3}${TB}stress-ng cpu-cache-mem${TN} tests sort&search, integer and floating point"
@@ -170,6 +170,8 @@ intro() {
     echo -e "You should run this script in ${FARBE2}${TB}runlevel 3${TN}. On Linux with systemd,"
     echo -e "either append a '3' to the boot command line, or run"
     echo -e "'systemctl isolate multi-user.target'.\n"
+    echo -e "You can switch back to the GUI with"
+    echo -e "'systemctl isolate graphical.target'.\n"
 }
 
 # traps (ctrl-c)
