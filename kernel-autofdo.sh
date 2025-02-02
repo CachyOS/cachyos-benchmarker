@@ -5,6 +5,10 @@ set -euo pipefail
 # CachyOS Benchmarker & Profiling Setup
 #-------------------------------------------------------------------------------
 
+# Allow to profile with branch sampling
+sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict"
+sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid"
+
 # Variables
 WORKDIR="${HOME}/profiling"
 NPROC="$(nproc)"
