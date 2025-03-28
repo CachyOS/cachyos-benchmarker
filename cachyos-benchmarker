@@ -351,7 +351,7 @@ checkfiles() {
 
 	if [[ ! -d "$WORKDIR/y-cruncher v0.8.6.9545-static" ]]; then
 		wget --show-progress -N -qO "$WORKDIR/y-cruncher.tar.xz" \
-		  http://numberworld.org/y-cruncher/"y-cruncher%20v0.8.6.9545-static.tar.xz"
+		  https://github.com/Mysticial/y-cruncher/releases/download/v0.8.6.9545/y-cruncher.v0.8.6.9545-static.tar.xz
 		echo "--> Uncompressing y-cruncher..."
 		cd "$WORKDIR"
 		tar -xf y-cruncher.tar.xz
