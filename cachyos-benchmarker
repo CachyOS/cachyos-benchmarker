@@ -7,11 +7,19 @@
 #
 # In Memoriam Jonathon Fernyhough
 
-TNAMES=('stress-ng cpu-cache-mem' 'ffmpeg compilation'
-	'x265 encoding' 'argon2 hashing' 'perf sched msg fork thread'
-	'perf memcpy' 'calculating prime numbers'
-	'namd 92K atoms' 'blender render'
-	'xz compression' 'kernel defconfig' 'y-cruncher pi 1b')
+TNAMES=('stress-ng cpu-cache-mem'	#0
+	'ffmpeg compilation'		#1
+	'x265 encoding'			#2
+	'argon2 hashing'		#3
+	'perf sched msg fork thread'	#4
+	'perf memcpy'			#5
+	'calculating prime numbers'	#6
+	'namd 92K atoms'		#7
+	'blender render'		#8
+	'xz compression'		#9
+	'kernel defconfig'		#10
+	'y-cruncher pi 1b'		#11
+)
 
 # animation
 animate() {
