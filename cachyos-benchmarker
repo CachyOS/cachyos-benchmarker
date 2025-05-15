@@ -128,7 +128,7 @@ runxz() {
 runkern() {
 	cd "$WORKDIR/linux-$KERNVER" || exit 4
 	local RESFILE="$WORKDIR/runkern"
-	/usr/bin/time -f %e -o "$RESFILE" make -sj$CPUCORES vmlinux &>/dev/null &
+	/usr/bin/time -f %e -o "$RESFILE" make KCFLAGS='-Wno-error' -sj$CPUCORES vmlinux &>/dev/null &
 	local PID=$!
 	echo -n -e "* ${TNAMES[10]}:\t\t\t"
 	animate 10 && return 0 || return 99
