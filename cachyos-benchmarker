@@ -382,7 +382,7 @@ checkfiles() {
 checksys() {
 	# ask user for dropping page cache
 	echo -e "\n"
-	read -p "Do you want to drop page cache now? Root priviledges needed! (y/N) " DCHOICE
+	read -p "Do you want to drop page cache now? Root privileges needed! (y/N) " DCHOICE
 	[[ $DCHOICE = "y" || $DCHOICE = "Y" ]] && sync && su -c "echo 1 > /proc/sys/vm/drop_caches"
 
 	LOCKFILE=$(mktemp $WORKDIR/benchie.XXXX)
