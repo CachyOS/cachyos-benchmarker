@@ -213,9 +213,10 @@ KERNVER="6.14.7"
 SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/Array.*:.*//;/^\s*$/d")
 if [ -f /sys/kernel/sched_ext/root/ops ]; then
     SCX=$(awk -F'_' '{print $1}' /sys/kernel/sched_ext/root/ops)
-    SCX_VERSION=$(scx_$SCX --version)
+    SCX_VERSION=$(scx_"$SCX" --version)
 else
     SCX="none"
+	SCX_VERSION=""
 fi
 VERSION=$(pacman -Qi cachyos-benchmarker | grep "Version         :")
 # allow more open files, needed by perf bench msg
