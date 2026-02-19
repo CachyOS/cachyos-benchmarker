@@ -238,7 +238,7 @@ fi
 if [ -n "$SCX" ] && [ "$SCX" != "none" ]; then
 	# sequence outputs: scx_lavd 1.0.21-g7298f797 x86_64-unknown-linux-gnu | 1.0.21-g7298f797 | 1.0.21
 	SCX_VERSION=$(scx_"$SCX" --version | awk -F'[[:space:]]' '{print $2}' | awk -F'-' '{print $1}')
-	if [ -x "$SCX_VERSION"]; then
+	if [ -n "$SCX_VERSION" ]; then
 		echo "$SCX is version $SCX_VERSION"
 	fi
 fi
