@@ -23,10 +23,12 @@ def parse_log_files():
                 print(f"Warning: Could not extract kernel version from file: {file}")
                 continue
 
+            scx_match = re.search(r'SCX Scheduler: (\S+)', data_text)
             scx_version_match = re.search(r'SCX Version: (\S+)', data_text)
-            if scx_version_match:
+            if scx_match and scx_version_match:
+                scx = scx_match.group(1)
                 scx_version = scx_version_match.group(1)
-                kernel_version = ''.join([kernel_version, '_', scx_version])
+                kernel_version = ''.join([kernel_version, '_scx_', scx, '_', scx_version])
 
             system_info_match = re.search(r'System:(.*?)$', data_text, re.DOTALL)
             if system_info_match:
