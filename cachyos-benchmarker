@@ -219,27 +219,22 @@ SCX_VERSION=""
 	
 SCXCTL=$(command -v scxctl)
 if [ -n "$SCXCTL" ]; then
-	# sequence outputs: running Lavd in Auto mode | running lavd in auto mode | lavd in auto mode | lavd
-    SCX=$(scxctl get | awk '{print tolower($0)}' | awk -F'running[[:space:]]' '{print $2}' | awk -F'[[:space:]]' '{print $1}')
+	# sequence outputs: running Lavd in Auto mode | lavd
+    SCX=$(scxctl get | sed -rn 's/^running (.*) in (.*) mode$/\L\1/p')
 	if [ -n "$SCX" ]; then
 		echo "Found scx_$SCX via scxctl"
+	else
+		SCX="none"
 	fi
 fi
 
-# Attempt fallback if scxctl is not available
-if [ "$SCX" = "none" ] && [ -f "/sys/kernel/sched_ext/root/ops" ]; then
-	# sequence outputs: lavd_1.0.21_g7298f797_x86_64_unknown_linux_gnu | lavd
-    SCX=$(cat "/sys/kernel/sched_ext/root/ops" | awk -F_ '{print $1}')
-	if [ -n "$SCX" ]; then
-		echo "Found scx_$SCX via /sys/kernel/sched_ext/root/ops"
-	fi
-fi
-
-if [ -n "$SCX" ] && [ "$SCX" != "none" ]; then
-	# sequence outputs: scx_lavd 1.0.21-g7298f797 x86_64-unknown-linux-gnu | 1.0.21-g7298f797 | 1.0.21
-	SCX_VERSION=$(scx_"$SCX" --version | awk -F'[[:space:]]' '{print $2}' | awk -F'-' '{print $1}')
+if [ "$SCX" != "none" ]; then
+	# sequence outputs: scx_lavd 1.0.21-g7298f797 x86_64-unknown-linux-gnu | 1.0.21-g7298f797
+	SCX_VERSION=$(scx_"$SCX" --version | sed -rn 's/^scx_(.*) (.*) (.*)$/\2/p')
 	if [ -n "$SCX_VERSION" ]; then
 		echo "$SCX is version $SCX_VERSION"
+	else
+		SCX_VERSION=""
 	fi
 fi
 
