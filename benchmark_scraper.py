@@ -28,7 +28,7 @@ def parse_log_files():
             if scx_match and scx_version_match:
                 scx = scx_match.group(1)
                 scx_version = scx_version_match.group(1)
-                kernel_version = ''.join([kernel_version, '_scx_', scx, '_', scx_version])
+                kernel_version = ''.join([kernel_version, '_', scx, '_', scx_version])
 
             system_info_match = re.search(r'System:(.*?)$', data_text, re.DOTALL)
             if system_info_match:
