@@ -217,14 +217,17 @@ SCX="none"
 SCX_VERSION=""
 # update if we find them below
 	
-if [ -x $(which scxctl) ]; then
+SCXCTL=$(command -v scxctl)
+if [ -n "$SCXCTL" ]; then
 	# sequence outputs: running Lavd in Auto mode | running lavd in auto mode | lavd in auto mode | lavd
     SCX=$(scxctl get | awk '{print tolower($0)}' | awk -F'running[[:space:]]' '{print $2}' | awk -F'[[:space:]]' '{print $1}')
-	echo "Found scx_$SCX via scxctl"
+	if [ -n "$SCX" ]; then
+		echo "Found scx_$SCX via scxctl"
+	fi
 fi
 
 # Attempt fallback if scxctl is not available
-if [ "$SCX" = "none" ] && [ -f /sys/kernel/sched_ext/root/ops ]; then
+if [ "$SCX" = "none" ] && [ -f "/sys/kernel/sched_ext/root/ops" ]; then
 	# sequence outputs: lavd_1.0.21_g7298f797_x86_64_unknown_linux_gnu | lavd
     SCX=$(cat /sys/kernel/sched_ext/root/ops | awk -F_ '{print $1}')
 	echo "Found scx_$SCX via /sys/kernel/sched_ext/root/ops"
