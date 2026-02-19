@@ -227,9 +227,9 @@ if [ -n "$SCXCTL" ]; then
 fi
 
 # Attempt fallback if scxctl is not available
-if [ "$SCX" = "none" ] && [ -f /sys/kernel/sched_ext/root/ops ]; then
+if [ "$SCX" = "none" ] && [ -f "/sys/kernel/sched_ext/root/ops" ]; then
 	# sequence outputs: lavd_1.0.21_g7298f797_x86_64_unknown_linux_gnu | lavd
-    SCX=$(cat /sys/kernel/sched_ext/root/ops | awk -F_ '{print $1}')
+    SCX=$(cat "/sys/kernel/sched_ext/root/ops" | awk -F_ '{print $1}')
 	if [ -n "$SCX" ]; then
 		echo "Found scx_$SCX via /sys/kernel/sched_ext/root/ops"
 	fi
