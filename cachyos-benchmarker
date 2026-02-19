@@ -220,9 +220,9 @@ SCX_VERSION=""
 SCXCTL=$(command -v scxctl)
 if [ -n "$SCXCTL" ]; then
 	# sequence outputs: running Lavd in Auto mode | lavd
-    SCX=$(scxctl get | sed -rn 's/^running (.*) in (.*) mode$/\L\1/p')
+    SCX=$(scxctl get | sed -rn 's/^running (.*) in (.*) mode$/scx_\L\1/p')
 	if [ -n "$SCX" ]; then
-		echo "Found scx_$SCX via scxctl"
+		echo "Found $SCX via scxctl"
 	else
 		SCX="none"
 	fi
@@ -230,7 +230,7 @@ fi
 
 if [ "$SCX" != "none" ]; then
 	# sequence outputs: scx_lavd 1.0.21-g7298f797 x86_64-unknown-linux-gnu | 1.0.21-g7298f797
-	SCX_VERSION=$(scx_"$SCX" --version | sed -rn 's/^scx_(.*) (.*) (.*)$/\2/p')
+	SCX_VERSION=$($SCX --version | sed -rn 's/^scx_(.*) (.*) (.*)$/\2/p')
 	if [ -n "$SCX_VERSION" ]; then
 		echo "$SCX is version $SCX_VERSION"
 	else
