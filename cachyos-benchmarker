@@ -222,7 +222,7 @@ SCX_VERSION=""
 if [ -f "/sys/kernel/sched_ext/root/ops" ]; then
 	TMP=$(cat "/sys/kernel/sched_ext/root/ops")
 	if [ -n "$TMP" ]; then
-		SCX=$(awk -F'[[:digit:]]' '{print $1}' "/sys/kernel/sched_ext/root/ops" | awk -F'[[:digit:]]' '{print $1}' | sed -rn 's/^(.*)_$/\1/p')
+		SCX=$(awk -F'[[:digit:]]' '{print $1}' "/sys/kernel/sched_ext/root/ops" | sed -rn 's/^(.*)_$/\1/p')
 		SCX_VERSION=$(sed -rn 's/^[^0-9]*([0-9]+(\.[0-9]+)+).*$/\1/p' "/sys/kernel/sched_ext/root/ops")
 	fi
 fi
