@@ -212,31 +212,22 @@ KERNVER="6.14.7"
 # system info will be logged
 SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/Array.*:.*//;/^\s*$/d")
 
+echo "Kernel: $(uname -r)"
+
 # Set defaults as none
 SCX="none"
 SCX_VERSION=""
 # update if we find them below
-	
-SCXCTL=$(command -v scxctl)
-if [ -n "$SCXCTL" ]; then
-	# sequence outputs: running Lavd in Auto mode | lavd
-    SCX=$(scxctl get | sed -rn 's/^running (.*) in (.*) mode$/scx_\L\1/p')
-	if [ -n "$SCX" ]; then
-		echo "Found $SCX via scxctl"
-	else
-		SCX="none"
+
+if [ -f "/sys/kernel/sched_ext/root/ops" ]; then
+	TMP=$(cat "/sys/kernel/sched_ext/root/ops")
+	if [ -n "$TMP" ]; then
+		SCX=$(awk -F'[[:digit:]]' '{print $1}' "/sys/kernel/sched_ext/root/ops" | awk -F'[[:digit:]]' '{print $1}' | sed -rn 's/^(.*)_$/\1/p')
+		SCX_VERSION=$(sed -rn 's/^[^0-9]*([0-9]+(\.[0-9]+)+).*$/\1/p' "/sys/kernel/sched_ext/root/ops")
 	fi
 fi
 
-if [ "$SCX" != "none" ]; then
-	# sequence outputs: scx_lavd 1.0.21-g7298f797 x86_64-unknown-linux-gnu | 1.0.21-g7298f797
-	SCX_VERSION=$($SCX --version | sed -rn 's/^scx_(.*) (.*) (.*)$/\2/p')
-	if [ -n "$SCX_VERSION" ]; then
-		echo "$SCX is version $SCX_VERSION"
-	else
-		SCX_VERSION=""
-	fi
-fi
+echo "Sched-Ext: $SCX $SCX_VERSION"
 
 VERSION=$(pacman -Qi cachyos-benchmarker | grep "Version         :")
 # allow more open files, needed by perf bench msg
