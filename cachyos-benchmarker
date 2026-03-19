@@ -145,6 +145,29 @@ runyc() {
 	animate 11 && return 0 || return 99
 }
 
+rungeekbench() {
+	local GBOUT="$WORKDIR/rungeekbench"
+	geekbench > "$GBOUT" 2>/dev/null &
+	local PID=$!
+	echo -n -e "* geekbench CPU benchmark:\t\t"
+	local s='-+' ; local i=0
+	while kill -0 "$PID" &>/dev/null
+	do i=$(( (i+1) %2 ))
+		printf "\b${s:$i:1}"
+		sleep 1
+	done
+	printf "\b done\n"
+	# geekbench doesn't print scores locally; extract the results URL and fetch scores from it
+	GB_URL=$(grep -oP 'https://browser\.geekbench\.com/v6/cpu/\d+' "$GBOUT" | head -1)
+	if [[ -n "$GB_URL" ]]; then
+		local GBHTML
+		GBHTML=$(curl -sL "$GB_URL")
+		GB_SINGLE=$(echo "$GBHTML" | grep -A1 "score-container-1" | grep -oP '(?<=<div class=.score.>)\d+')
+		GB_MULTI=$(echo "$GBHTML" | grep -B1 "Multi-Core Score" | grep -oP '(?<=<div class=.score.>)\d+')
+	fi
+	return 0
+}
+
 # intro text and explanation
 intro() {
     echo -e "\n${FARBE1}${TB}MINI-BENCHMARKER: This script can take a very long time on slow computers!${TN}\n"
@@ -462,6 +485,23 @@ echo -n "Total score, lower is better" ; echo " [multi = $COEFF]:"
 echo "--------------------------------------------------"
 echo "  ${TB}$SCORE${TN}" ; echo "Total score: $SCORE" >> "$LOGFILE"
 echo "=================================================="
+
+# geekbench (score-based, not included in timed scoring)
+if command -v geekbench &>/dev/null; then
+	rungeekbench
+	echo "--------------------------------------------------"
+	echo "Geekbench CPU Score:"
+	echo "--------------------------------------------------"
+	if [[ -n "$GB_SINGLE" && -n "$GB_MULTI" ]]; then
+		echo "  Single-Core: ${TB}$GB_SINGLE${TN}"
+		echo "  Multi-Core:  ${TB}$GB_MULTI${TN}"
+		echo -e "geekbench single-core: $GB_SINGLE" >> "$LOGFILE"
+		echo -e "geekbench multi-core: $GB_MULTI" >> "$LOGFILE"
+	else
+		echo "  ${FARBE1}FAILED${TN} (check $WORKDIR/rungeekbench for details)"
+	fi
+	echo "=================================================="
+fi
 
 echo -e "\nName: ${NCHOICE}" >> "$LOGFILE"
 echo -e "Date: ${CDATE}" >> "$LOGFILE"
