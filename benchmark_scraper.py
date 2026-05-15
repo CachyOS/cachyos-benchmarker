@@ -1,5 +1,8 @@
 import os
 import re
+import csv
+import json
+from datetime import datetime, timezone
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -84,6 +87,48 @@ def plot_horizontal_bar_chart_with_annotations(average_times, mode, kernel_versi
 # Define a color palette
 colors = list(mcolors.TABLEAU_COLORS.keys())
 
+# Function to export aggregated data to CSV and JSON
+def export_data(average_times, kernel_versions, csv_filename, json_filename):
+    # Helper to split the concatenated kernel version string
+    def split_kernel_string(kv):
+        parts = kv.rsplit('_', 2)
+        if len(parts) == 3:
+            return parts[0], parts[1], parts[2]
+        return kv, "none", "none"
+
+    # JSON export
+    json_data = []
+    for i, kernel_version in enumerate(kernel_versions):
+        kernel, scx, scx_ver = split_kernel_string(kernel_version)
+        entry = {
+            "kernel": kernel,
+            "scx_scheduler": scx,
+            "scx_version": scx_ver,
+            "metrics": {k: float(v) for k, v in average_times[i].items()}
+        }
+        json_data.append(entry)
+    
+    with open(json_filename, 'w') as f:
+        json.dump(json_data, f, indent=4)
+
+    # CSV export
+    if not kernel_versions:
+        return
+    
+    test_names = list(average_times[0].keys())
+    
+    with open(csv_filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        header = ['Kernel', 'SCX Scheduler', 'SCX Version'] + test_names
+        writer.writerow(header)
+        
+        for i, kernel_version in enumerate(kernel_versions):
+            kernel, scx, scx_ver = split_kernel_string(kernel_version)
+            row = [kernel, scx, scx_ver]
+            for test_name in test_names:
+                row.append(average_times[i].get(test_name, ''))
+            writer.writerow(row)
+
 # Function to plot performance comparison between different kernel versions
 def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     test_names = list(average_times[0].keys())
@@ -148,6 +193,15 @@ if test_data:
     # Plot performance comparison between different kernel versions
     plot_kernel_version_comparison(average_times, 'All', kernel_versions_list)
 
+    # Generate ISO 8601 timestamp for filenames
+    # E.g., 2026-05-15T21-26-12Z
+    timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%SZ')
+    csv_filename = f"test_results_{timestamp}.csv"
+    json_filename = f"test_results_{timestamp}.json"
+
+    # Export data to CSV and JSON
+    export_data(average_times, kernel_versions_list, csv_filename, json_filename)
+
     # Generate HTML page
     html_content = f"""
     <!DOCTYPE html>
@@ -171,6 +225,15 @@ if test_data:
     html_content += f"""
     <h2>Performance Comparison Between Different Kernel Versions</h2>
     <img src="kernel_version_comparison_All.png" alt="Performance Comparison Between Different Kernel Versions - All Kernels" style="max-width: 100%; height: auto;">
+    """
+
+    # Add links to raw data exports
+    html_content += f"""
+    <h2>Raw Data Exports</h2>
+    <p>
+        <a href="{csv_filename}">Download Results (CSV)</a> | 
+        <a href="{json_filename}">Download Results (JSON)</a>
+    </p>
     """
 
     html_content += """
