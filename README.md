@@ -15,8 +15,8 @@
 ## How It Works
 
 *   **cachyos-benchmarker**: The core script. It prepares the environment, downloads necessary assets, and runs a suite of 12 synthetic and real-world benchmarks (such as `stress-ng`, Blender CPU render, FFmpeg/Kernel compilation, and x265 encoding). Results, along with detailed system and `sched-ext` information, are logged to a `.log` file.
-*   **benchmark_scraper.py**: A visualization tool. It parses the generated `.log` files to aggregate performance metrics, compare different kernel or scheduler configurations, and generate visual bar charts alongside an HTML report.
-*   **kernel-autofdo.sh**: A helper script for hardware profiling to generate a footprint for AutoFDO.
+*   **benchmark_scraper.py**: A visualization and data extraction tool. It parses the generated `.log` files to aggregate performance metrics, compare different kernel or scheduler configurations, and generate visual bar charts alongside an HTML report. It also automatically exports the aggregated raw data to time-stamped `.csv` and `.json` files for further analysis.
+*   **kernel-autofdo.sh**: A helper script for hardware profiling. It automatically configures kernel branch sampling and runs the benchmarker alongside additional workloads (like `sysbench` and base-kernel compilation) to generate a footprint for AutoFDO.
 
 # ToDo
 
