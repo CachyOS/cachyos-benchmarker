@@ -21,11 +21,41 @@ TNAMES=('stress-ng cpu-cache-mem'	#0
 	'y-cruncher pi 1b'		#11
 )
 
+# check if the active scheduler is still running and hasn't crashed/exited
+check_scheduler_integrity() {
+	if [[ "$SCX" != "none" ]]; then
+		if [ -f "/sys/kernel/sched_ext/root/ops" ]; then
+			local CURRENT_OPS
+			CURRENT_OPS=$(cat "/sys/kernel/sched_ext/root/ops" 2>/dev/null || true)
+			if [ -z "$CURRENT_OPS" ]; then
+				return 1
+			fi
+			local CURRENT_SCX
+			CURRENT_SCX=$(echo "$CURRENT_OPS" | awk -F'[[:digit:]]' '{print $1}' | sed -rn 's/^(.*)_$/\1/p')
+			[[ -z "$CURRENT_SCX" ]] && CURRENT_SCX="$CURRENT_OPS"
+			if [[ "$CURRENT_SCX" != "$SCX" ]]; then
+				return 1
+			fi
+		else
+			return 1
+		fi
+	fi
+	return 0
+}
+
 # animation
 animate() {
 	local s='-+' ; local i=0
 	while kill -0 "$PID" &>/dev/null
-		do i=$(( (i+1) %2 ))
+	do
+		if ! check_scheduler_integrity; then
+			printf "\n${FARBE1}${TB}**** CRITICAL: Scheduler crashed or exited during ${TNAMES[$1]}! ****${TN}\n"
+			kill -9 "$PID" 2>/dev/null || true
+			echo -e "${TNAMES[$1]}: FAILED (Scheduler crashed)" >> "$LOGFILE"
+			echo -e "\nSCX Scheduler: ${SCX} (CRASHED during ${TNAMES[$1]})" >> "$LOGFILE"
+			exit 9
+		fi
+		i=$(( (i+1) %2 ))
 		printf "\b${s:$i:1}"
 		sleep 1
 	done
@@ -170,39 +200,79 @@ rungeekbench() {
 
 # intro text and explanation
 intro() {
-    echo -e "\n${FARBE1}${TB}MINI-BENCHMARKER: This script can take a very long time on slow computers!${TN}\n"
-    echo -e "${TB}Usage:${TN} cachyos-benchmarker /path/to/workdir\n"
-    echo -e "${FARBE2}${TB}Explanation notes${TN}:\n"
+    # ANSI escape sequences for formatting
+    local B_CYAN="\033[1;36m"
+    local B_BLUE="\033[1;34m"
+    local B_RED="\033[1;31m"
+    local B_GREEN="\033[1;32m"
+    local B_YELLOW="\033[1;33m"
+    local BOLD="\033[1m"
+    local REGULAR="\033[0m"
 
-    echo -e "${FARBE3}${TB}stress-ng cpu-cache-mem${TN} tests sort&search, integer and floating point"
-    echo -e "arithmetics, memory and cache operations.\n"
+    echo -e "\n  ${B_BLUE}┌────────────────────────────────────────────────────────┐${REGULAR}"
+    echo -e "  ${B_BLUE}│${B_CYAN}${BOLD}                   MINI-BENCHMARKER                     ${B_BLUE}│${REGULAR}"
+    echo -e "  ${B_BLUE}└────────────────────────────────────────────────────────┘${REGULAR}"
+    echo -e "  ${B_RED}${BOLD}Warning: This script can take a very long time on slow computers!${REGULAR}\n"
 
-    echo -e "The ${FARBE3}${TB}perf sched${TN} benchmark concentrates on interprocess communication"
-    echo -e "and pipelining, whereas the ${FARBE3}${TB}perf mem${TN} benchmark tries to measure raw"
-    echo -e "RAM throughput speed with the libc memcpy function.\n"
+    echo -e "  ${B_CYAN}${BOLD}Usage:${REGULAR}"
+    echo -e "    cachyos-benchmarker [options] <workdir>\n"
 
-    echo -e "The ${FARBE3}${TB}primesieve${TN} multithreaded benchmark searches for primes within the"
-    echo -e "first 6.66*10^11 natural numbers.\n"
+    echo -e "  ${B_CYAN}${BOLD}Options:${REGULAR}"
+    echo -e "    ${B_GREEN}-c, --cleanup${REGULAR}  Delete downloaded archives & extracted trees on exit"
+    echo -e "    ${B_GREEN}-h, --help${REGULAR}     Show this help message\n"
 
-    echo -e "${FARBE3}${TB}NAMD${TN} is a multi-threaded molecular dynamics simulation.\n"
+    echo -e "  ${B_CYAN}${BOLD}Detected Environment:${REGULAR}"
+    echo -e "    ${B_YELLOW}• Host Kernel${REGULAR}  : $(uname -r)"
+    if [[ "$SCX" != "none" ]]; then
+        echo -e "    ${B_YELLOW}• Sched-Ext${REGULAR}    : ${SCX} (${SCX_VERSION:-unknown version})"
+    else
+        echo -e "    ${B_YELLOW}• Sched-Ext${REGULAR}    : none"
+    fi
+    echo -e "    ${B_YELLOW}• CPU Cores${REGULAR}    : ${CPUCORES} cores"
+    local RAM_GB
+    RAM_GB=$(python -c "print(round($RAMSIZE / 1024, 1))")
+    echo -e "    ${B_YELLOW}• System RAM${REGULAR}   : ${RAM_GB} GB (${RAMSIZE} MB)\n"
 
-    echo -e "${FARBE3}${TB}argon2${TN} is a prized hashing algorithm. It uses 16 iterations with 2G"
-    echo -e "of memory, with a fixed salt and a random password.\n"
+    echo -e "  ${B_CYAN}${BOLD}Benchmarks Overview:${REGULAR}"
+    echo -e "    ${B_YELLOW}• stress-ng cpu-cache-mem${REGULAR} : Sort & search, integer/float arithmetics, memory & cache"
+    echo -e "    ${B_YELLOW}• perf sched${REGULAR}              : Interprocess communication and pipelining"
+    echo -e "    ${B_YELLOW}• perf mem${REGULAR}                : Raw RAM throughput speed using libc memcpy"
+    echo -e "    ${B_YELLOW}• primesieve${REGULAR}              : Multithreaded search for primes up to 6.66*10^11"
+    echo -e "    ${B_YELLOW}• NAMD${REGULAR}                    : Multithreaded molecular dynamics simulation"
+    echo -e "    ${B_YELLOW}• argon2${REGULAR}                  : Hashing algorithm (16 iterations, 2GB memory)"
+    echo -e "    ${B_YELLOW}• compilation${REGULAR}             : Compiles FFmpeg and the Linux kernel"
+    echo -e "    ${B_YELLOW}• xz compression${REGULAR}          : Compresses Firefox source tarball using xz"
+    echo -e "    ${B_YELLOW}• x265 encoding${REGULAR}           : Encodes a short 1080p video clip"
+    echo -e "    ${B_YELLOW}• Blender BMW${REGULAR}             : CPU-only Blender render (BMW model)"
+    echo -e "    ${B_YELLOW}• y-cruncher${REGULAR}              : Highly optimized pi calculator (1 billion digits)"
+    echo -e "    ${B_YELLOW}• geekbench (optional)${REGULAR}    : Runs standard CPU benchmarks (requires 'geekbench' in PATH)\n"
 
-    echo -e "Several 'real world' benchmarks are available, measuring ${FARBE3}${TB}compilation"
-    echo -e "of ffmpeg and the Linux kernel${TN}, Firefox source tarball ${FARBE3}${TB}xz compression${TN}"
-    echo -e "and ${FARBE3}${TB}x265 encoding${TN} of a short 1080p video clip.\n"
+    echo -e "  ${B_CYAN}${BOLD}Resilience & Caching Features:${REGULAR}"
+    echo -e "    ${B_GREEN}• Asset Caching${REGULAR}       : Downloaded archives (.tar.xz, .7z) and extracted source directories"
+    echo -e "                            are cached in <workdir> by default to accelerate repeated runs."
+    echo -e "    ${B_GREEN}• Resumable Downloads${REGULAR} : Interrupted downloads automatically resume via 'wget -c'."
+    echo -e "    ${B_GREEN}• Integrity Checks${REGULAR}    : Archive files are verified (tar -tf, xz -t, 7z t) before run."
+    echo -e "                            Corrupted archives are automatically detected and re-downloaded."
+    echo -e "    ${B_GREEN}• Scheduler Monitor${REGULAR}   : Actively monitors the active sched_ext scheduler. If it crashes or"
+    echo -e "                            exits mid-run, the benchmarker terminates safely (exits with code 9).\n"
 
-    echo -e "It also includes the famous and slightly modified ${FARBE3}${TB}Blender BMW${TN} benchmark"
-    echo -e "(CPU only) and the ${FARBE3}${TB}y-cruncher${TN} highly optimised pi calculator.\n"
+    echo -e "  ${B_CYAN}${BOLD}Exit Codes:${REGULAR}"
+    echo -e "    ${B_YELLOW}• 0${REGULAR} : All benchmarks completed successfully"
+    echo -e "    ${B_YELLOW}• 1${REGULAR} : Command-line syntax / argument error"
+    echo -e "    ${B_YELLOW}• 2${REGULAR} : Interrupted by user (SIGINT) or insufficient RAM (< 4GB)"
+    echo -e "    ${B_YELLOW}• 4${REGULAR} : Failed to create/access directories or prepare sources"
+    echo -e "    ${B_YELLOW}• 8${REGULAR} : General run or compilation failure"
+    echo -e "    ${B_YELLOW}• 9${REGULAR} : Critical: Sched-Ext scheduler crashed or exited mid-run\n"
 
-    echo -e "The ${FARBE3}${TB}score${TN} is not really relevant. It tries to compress the raw time"
-    echo -e "results using geometric mean. What counts is the ${FARBE3}${TB}total time${TN}.\n"
-    echo -e "You should run this script in ${FARBE2}${TB}runlevel 3${TN}. On Linux with systemd,"
-    echo -e "either append a '3' to the boot command line, or run"
-    echo -e "'systemctl isolate multi-user.target'.\n"
-    echo -e "You can switch back to the GUI with"
-    echo -e "'systemctl isolate graphical.target'.\n"
+    echo -e "  ${B_CYAN}${BOLD}Notes:${REGULAR}"
+    echo -e "    - Results are logged to individual files: ${BOLD}benchie_<name>_<date>.log${REGULAR} in <workdir>"
+    echo -e "    - A comparative HTML report (${BOLD}test_performance.html${REGULAR}) and performance charts"
+    echo -e "      (${BOLD}.png${REGULAR}) are automatically compiled in <workdir> at the end of each run"
+    echo -e "    - Total Time is the key benchmark metric (score is calculated using geometric mean)"
+    echo -e "    - It is highly recommended to run this in runlevel 3 (multi-user target):"
+    echo -e "        ${BOLD}systemctl isolate multi-user.target${REGULAR}"
+    echo -e "      To return to the GUI:"
+    echo -e "        ${BOLD}systemctl isolate graphical.target${REGULAR}\n"
 }
 
 # traps (ctrl-c)
@@ -214,9 +284,22 @@ killproc() {
 exitproc() {
 	echo -e "\n-> Removing temporary files..."
 	rm -f "$WORKDIR"/run* "$WORKDIR"/stressC "$WORKDIR"/*.txt \
-	      "$WORKDIR"/firefox102.tar.xz "$WORKDIR"/*.zst "$WORKDIR"/*.7z \
 	      "$WORKDIR"/*.jpg "$WORKDIR"/*.ppm
-	rm -f "$LOCKFILE" && echo -e "${TB}Bye!${TN}\n"
+	rm -f "$LOCKFILE"
+	
+	if [[ "$CLEANUP" == "true" ]]; then
+		echo -e "-> Cleaning up downloaded archives and extracted directories..."
+		rm -f "$WORKDIR"/firefox102.tar.xz "$WORKDIR"/*.zst "$WORKDIR"/*.7z \
+		      "$WORKDIR"/ffmpeg.tar.xz "$WORKDIR"/namd.tar.gz "$WORKDIR"/namd-example.tar.gz \
+		      "$WORKDIR"/linux-$KERNVER.tar.xz "$WORKDIR"/y-cruncher.tar.xz
+		rm -rf "$WORKDIR/ffmpeg-$FFMPEGVER" \
+		       "$WORKDIR/namd" \
+		       "$WORKDIR/linux-$KERNVER" \
+		       "$WORKDIR/y-cruncher v$YCRUNCHER_VER-static" \
+		       "$WORKDIR/firefox102.tar" \
+		       "$WORKDIR/bosphorus_hd.y4m"
+	fi
+	echo -e "${TB}Bye!${TN}\n"
 }
 
 # vars
@@ -235,8 +318,6 @@ KERNVER="6.14.7"
 # system info will be logged
 SYSINFO=$(inxi -CmSz -c0 -y-1 | sed -e "s/Array.*:.*//;/^\s*$/d")
 
-echo "Kernel: $(uname -r)"
-
 # Set defaults as none
 SCX="none"
 SCX_VERSION=""
@@ -247,16 +328,13 @@ if [ -f "/sys/kernel/sched_ext/root/ops" ]; then
 	if [ -n "$TMP" ]; then
 		SCX=$(awk -F'[[:digit:]]' '{print $1}' "/sys/kernel/sched_ext/root/ops" | sed -rn 's/^(.*)_$/\1/p')
 		SCX_VERSION=$(sed -rn 's/^[^0-9]*([0-9]+(\.[0-9]+)+).*$/\1/p' "/sys/kernel/sched_ext/root/ops")
+		[[ -z "$SCX" ]] && SCX="$TMP"
 	fi
 fi
 
-echo "Sched-Ext: $SCX $SCX_VERSION"
-
-VERSION=$(pacman -Qi cachyos-benchmarker | grep "Version         :")
+VERSION=$(pacman -Qi cachyos-benchmarker 2>/dev/null | grep "Version         :" || true)
 # allow more open files, needed by perf bench msg
 ulimit -n 4096
-# check system memory
-[[ $RAMSIZE -lt 3500 ]] && echo "Your computer must have at least 4 GB of RAM! Aborting." && exit 2
 
 # I leave this for reference
 #CPUFREQ=$(cpupower frequency-info -l | grep -v "analyzing" | awk '{print $2 / 1000000}')
@@ -272,9 +350,43 @@ FARBE1="`printf '\033[0;91m'`"
 FARBE2="`printf '\033[4;37m'`"
 FARBE3="`printf '\033[0;33m'`"
 
-# when called without parameters, print help text and exit
-[[ $# == 0 ]] && intro && exit 0
-WORKDIR="$1"
+CLEANUP=false
+WORKDIR=""
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		-c|--cleanup)
+			CLEANUP=true
+			shift
+			;;
+		-h|--help)
+			intro
+			exit 0
+			;;
+		-*)
+			echo "Unknown option: $1"
+			intro
+			exit 1
+			;;
+		*)
+			if [[ -z "$WORKDIR" ]]; then
+				WORKDIR="$1"
+			else
+				echo "Too many arguments. Expected: [options] <workdir>"
+				exit 1
+			fi
+			shift
+			;;
+	esac
+done
+
+if [[ -z "$WORKDIR" ]]; then
+	intro
+	exit 0
+fi
+
+# check system memory
+[[ $RAMSIZE -lt 3500 ]] && echo "Your computer must have at least 4 GB of RAM! Aborting." && exit 2
 
 [[ "${WORKDIR:0:1}" != "/" ]] && WORKDIR="$PWD/$WORKDIR"
 if [[ ! -d "$WORKDIR" ]] ; then
@@ -345,8 +457,11 @@ checkfiles() {
 	sed -i "s/CPUCORES/$CPUCORES/g" "$WORKDIR/stressC"
 
 	if [[ ! -f "$WORKDIR/bosphorus_hd.y4m" ]] ; then
-		wget --show-progress -N -qO "$WORKDIR/bosphorus_hd.7z" \
-		  http://ultravideo.cs.tut.fi/video/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.7z
+		if [[ ! -f "$WORKDIR/bosphorus_hd.7z" ]] || ! 7z t "$WORKDIR/bosphorus_hd.7z" &>/dev/null; then
+			echo "--> Downloading video archive..."
+			wget -c --show-progress -qO "$WORKDIR/bosphorus_hd.7z" \
+			  http://ultravideo.cs.tut.fi/video/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.7z
+		fi
 		echo "--> Unzipping video..."
 		cd "$WORKDIR"
 		7z e bosphorus_hd.7z -o./ &>/dev/null
@@ -354,18 +469,27 @@ checkfiles() {
 	fi
 
 	if [[ ! -d "$WORKDIR/ffmpeg-$FFMPEGVER" ]]; then
-		wget --show-progress -N -qO "$WORKDIR/ffmpeg.tar.xz" \
-		  "https://ffmpeg.org/releases/ffmpeg-$FFMPEGVER.tar.xz"
+		if [[ ! -f "$WORKDIR/ffmpeg.tar.xz" ]] || ! tar -tf "$WORKDIR/ffmpeg.tar.xz" &>/dev/null; then
+			echo "--> Downloading ffmpeg archive..."
+			wget -c --show-progress -qO "$WORKDIR/ffmpeg.tar.xz" \
+			  "https://ffmpeg.org/releases/ffmpeg-$FFMPEGVER.tar.xz"
+		fi
 		echo "--> Preparing ffmpeg..."
 		cd "$WORKDIR"
 		tar -xf ffmpeg.tar.xz
 	fi
 
 	if [[ ! -d "$WORKDIR/namd" ]]; then
-		wget --show-progress -N -qO "$WORKDIR/namd.tar.gz" \
-		  http://www.ks.uiuc.edu/Research/namd/3.0b6/download/120834/NAMD_3.0b6_Linux-x86_64-multicore.tar.gz
-		wget --show-progress -N -qO "$WORKDIR/namd-example.tar.gz" \
-		  https://www.ks.uiuc.edu/Research/namd/utilities/apoa1.tar.gz
+		if [[ ! -f "$WORKDIR/namd.tar.gz" ]] || ! tar -tf "$WORKDIR/namd.tar.gz" &>/dev/null; then
+			echo "--> Downloading NAMD archive..."
+			wget -c --show-progress -qO "$WORKDIR/namd.tar.gz" \
+			  http://www.ks.uiuc.edu/Research/namd/3.0b6/download/120834/NAMD_3.0b6_Linux-x86_64-multicore.tar.gz
+		fi
+		if [[ ! -f "$WORKDIR/namd-example.tar.gz" ]] || ! tar -tf "$WORKDIR/namd-example.tar.gz" &>/dev/null; then
+			echo "--> Downloading NAMD example archive..."
+			wget -c --show-progress -qO "$WORKDIR/namd-example.tar.gz" \
+			  https://www.ks.uiuc.edu/Research/namd/utilities/apoa1.tar.gz
+		fi
 		echo "--> Preparing NAMD..."
 		cd "$WORKDIR"
 		mkdir namd
@@ -375,28 +499,38 @@ checkfiles() {
 	fi
 
 	if [[ ! -f "$WORKDIR/bmw_cpu_mod.blend" ]]; then
-		wget --show-progress -N -qO "$WORKDIR/bmw_cpu_mod.blend" \
+		echo "--> Downloading Blender BMW model..."
+		wget -c --show-progress -qO "$WORKDIR/bmw_cpu_mod.blend" \
 		  https://gitlab.com/torvic9/mini-benchmarker/-/raw/master/bmw_cpu_mod.blend
 	fi
 
 	if [[ ! -f "$WORKDIR/firefox102.tar" ]]; then
-		wget --show-progress -N -qO "$WORKDIR/firefox102.tar.xz" \
-		  http://ftp.mozilla.org/pub/firefox/releases/102.9.0esr/source/firefox-102.9.0esr.source.tar.xz
+		if [[ ! -f "$WORKDIR/firefox102.tar.xz" ]] || ! xz -t "$WORKDIR/firefox102.tar.xz" &>/dev/null; then
+			echo "--> Downloading Firefox archive..."
+			wget -c --show-progress -qO "$WORKDIR/firefox102.tar.xz" \
+			  http://ftp.mozilla.org/pub/firefox/releases/102.9.0esr/source/firefox-102.9.0esr.source.tar.xz
+		fi
 		echo "--> Unzipping Firefox tarball..."
-		xz -d -q "$WORKDIR/firefox102.tar.xz"
+		xz -d -k -q -f "$WORKDIR/firefox102.tar.xz"
 	fi
 
 	if [[ ! -d "$WORKDIR/linux-$KERNVER" ]]; then
-		wget --show-progress -N -qO "$WORKDIR/linux-$KERNVER.tar.xz" \
-		  https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KERNVER.tar.xz
+		if [[ ! -f "$WORKDIR/linux-$KERNVER.tar.xz" ]] || ! tar -tf "$WORKDIR/linux-$KERNVER.tar.xz" &>/dev/null; then
+			echo "--> Downloading Linux kernel archive..."
+			wget -c --show-progress -qO "$WORKDIR/linux-$KERNVER.tar.xz" \
+			  https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KERNVER.tar.xz
+		fi
 		echo "--> Uncompressing kernel source..."
 		cd "$WORKDIR"
 		tar -xf linux-$KERNVER.tar.xz
 	fi
 
 	if [[ ! -d "$WORKDIR/y-cruncher v$YCRUNCHER_VER-static" ]]; then
-		wget --show-progress -N -qO "$WORKDIR/y-cruncher.tar.xz" \
-		  "https://github.com/Mysticial/y-cruncher/releases/download/v$YCRUNCHER_VER/y-cruncher.v$YCRUNCHER_VER-static.tar.xz"
+		if [[ ! -f "$WORKDIR/y-cruncher.tar.xz" ]] || ! tar -tf "$WORKDIR/y-cruncher.tar.xz" &>/dev/null; then
+			echo "--> Downloading y-cruncher archive..."
+			wget -c --show-progress -qO "$WORKDIR/y-cruncher.tar.xz" \
+			  "https://github.com/Mysticial/y-cruncher/releases/download/v$YCRUNCHER_VER/y-cruncher.v$YCRUNCHER_VER-static.tar.xz"
+		fi
 		echo "--> Uncompressing y-cruncher..."
 		cd "$WORKDIR"
 		tar -xf y-cruncher.tar.xz
@@ -434,9 +568,12 @@ checksys() {
 	trap exitproc EXIT
 }
 
-# print header
 header() {
 	echo -e "\n${TB}Starting...${TN}\n" ; sync ; sleep 2
+
+	echo "Kernel: $(uname -r)"
+	echo "Sched-Ext: $SCX $SCX_VERSION"
+	echo ""
 
 	echo -e "__________________________________________________"
 	echo -e "=====${TB}__${TN}==${TB}__${TN} ===========================${TB}_____${TN} ====="
