@@ -63,6 +63,23 @@ animate() {
 	echo -e "${TNAMES[$1]}: $(cat "$RESFILE")" >> "$LOGFILE"
 }
 
+ensure_archive() {
+	local file="$1"
+	local description="$2"
+	local url="$3"
+	shift 3
+
+	if [[ -f "$file" ]] && ! "$@" "$file" &>/dev/null; then
+		echo "--> Cached ${description} archive is invalid, re-downloading..."
+		rm -f "$file"
+	fi
+
+	if [[ ! -f "$file" ]]; then
+		echo "--> Downloading ${description} archive..."
+		wget -c --show-progress -qO "$file" "$url"
+	fi
+}
+
 # tests
 runstress() {
 	local RESFILE="$WORKDIR/runstress"
@@ -286,7 +303,7 @@ exitproc() {
 	rm -f "$WORKDIR"/run* "$WORKDIR"/stressC "$WORKDIR"/*.txt \
 	      "$WORKDIR"/*.jpg "$WORKDIR"/*.ppm
 	rm -f "$LOCKFILE"
-	
+
 	if [[ "$CLEANUP" == "true" ]]; then
 		echo -e "-> Cleaning up downloaded archives and extracted directories..."
 		rm -f "$WORKDIR"/firefox102.tar.xz "$WORKDIR"/*.zst "$WORKDIR"/*.7z \
@@ -457,11 +474,9 @@ checkfiles() {
 	sed -i "s/CPUCORES/$CPUCORES/g" "$WORKDIR/stressC"
 
 	if [[ ! -f "$WORKDIR/bosphorus_hd.y4m" ]] ; then
-		if [[ ! -f "$WORKDIR/bosphorus_hd.7z" ]] || ! 7z t "$WORKDIR/bosphorus_hd.7z" &>/dev/null; then
-			echo "--> Downloading video archive..."
-			wget -c --show-progress -qO "$WORKDIR/bosphorus_hd.7z" \
-			  http://ultravideo.cs.tut.fi/video/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.7z
-		fi
+		ensure_archive "$WORKDIR/bosphorus_hd.7z" "video" \
+		  "http://ultravideo.cs.tut.fi/video/Bosphorus_1920x1080_120fps_420_8bit_YUV_Y4M.7z" \
+		  7z t
 		echo "--> Unzipping video..."
 		cd "$WORKDIR"
 		7z e bosphorus_hd.7z -o./ &>/dev/null
@@ -469,27 +484,21 @@ checkfiles() {
 	fi
 
 	if [[ ! -d "$WORKDIR/ffmpeg-$FFMPEGVER" ]]; then
-		if [[ ! -f "$WORKDIR/ffmpeg.tar.xz" ]] || ! tar -tf "$WORKDIR/ffmpeg.tar.xz" &>/dev/null; then
-			echo "--> Downloading ffmpeg archive..."
-			wget -c --show-progress -qO "$WORKDIR/ffmpeg.tar.xz" \
-			  "https://ffmpeg.org/releases/ffmpeg-$FFMPEGVER.tar.xz"
-		fi
+		ensure_archive "$WORKDIR/ffmpeg.tar.xz" "ffmpeg" \
+		  "https://ffmpeg.org/releases/ffmpeg-$FFMPEGVER.tar.xz" \
+		  tar -tf
 		echo "--> Preparing ffmpeg..."
 		cd "$WORKDIR"
 		tar -xf ffmpeg.tar.xz
 	fi
 
 	if [[ ! -d "$WORKDIR/namd" ]]; then
-		if [[ ! -f "$WORKDIR/namd.tar.gz" ]] || ! tar -tf "$WORKDIR/namd.tar.gz" &>/dev/null; then
-			echo "--> Downloading NAMD archive..."
-			wget -c --show-progress -qO "$WORKDIR/namd.tar.gz" \
-			  http://www.ks.uiuc.edu/Research/namd/3.0b6/download/120834/NAMD_3.0b6_Linux-x86_64-multicore.tar.gz
-		fi
-		if [[ ! -f "$WORKDIR/namd-example.tar.gz" ]] || ! tar -tf "$WORKDIR/namd-example.tar.gz" &>/dev/null; then
-			echo "--> Downloading NAMD example archive..."
-			wget -c --show-progress -qO "$WORKDIR/namd-example.tar.gz" \
-			  https://www.ks.uiuc.edu/Research/namd/utilities/apoa1.tar.gz
-		fi
+		ensure_archive "$WORKDIR/namd.tar.gz" "NAMD" \
+		  "http://www.ks.uiuc.edu/Research/namd/3.0b6/download/120834/NAMD_3.0b6_Linux-x86_64-multicore.tar.gz" \
+		  tar -tf
+		ensure_archive "$WORKDIR/namd-example.tar.gz" "NAMD example" \
+		  "https://www.ks.uiuc.edu/Research/namd/utilities/apoa1.tar.gz" \
+		  tar -tf
 		echo "--> Preparing NAMD..."
 		cd "$WORKDIR"
 		mkdir namd
@@ -505,32 +514,26 @@ checkfiles() {
 	fi
 
 	if [[ ! -f "$WORKDIR/firefox102.tar" ]]; then
-		if [[ ! -f "$WORKDIR/firefox102.tar.xz" ]] || ! xz -t "$WORKDIR/firefox102.tar.xz" &>/dev/null; then
-			echo "--> Downloading Firefox archive..."
-			wget -c --show-progress -qO "$WORKDIR/firefox102.tar.xz" \
-			  http://ftp.mozilla.org/pub/firefox/releases/102.9.0esr/source/firefox-102.9.0esr.source.tar.xz
-		fi
+		ensure_archive "$WORKDIR/firefox102.tar.xz" "Firefox" \
+		  "http://ftp.mozilla.org/pub/firefox/releases/102.9.0esr/source/firefox-102.9.0esr.source.tar.xz" \
+		  xz -t
 		echo "--> Unzipping Firefox tarball..."
 		xz -d -k -q -f "$WORKDIR/firefox102.tar.xz"
 	fi
 
 	if [[ ! -d "$WORKDIR/linux-$KERNVER" ]]; then
-		if [[ ! -f "$WORKDIR/linux-$KERNVER.tar.xz" ]] || ! tar -tf "$WORKDIR/linux-$KERNVER.tar.xz" &>/dev/null; then
-			echo "--> Downloading Linux kernel archive..."
-			wget -c --show-progress -qO "$WORKDIR/linux-$KERNVER.tar.xz" \
-			  https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KERNVER.tar.xz
-		fi
+		ensure_archive "$WORKDIR/linux-$KERNVER.tar.xz" "Linux kernel" \
+		  "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-$KERNVER.tar.xz" \
+		  tar -tf
 		echo "--> Uncompressing kernel source..."
 		cd "$WORKDIR"
 		tar -xf linux-$KERNVER.tar.xz
 	fi
 
 	if [[ ! -d "$WORKDIR/y-cruncher v$YCRUNCHER_VER-static" ]]; then
-		if [[ ! -f "$WORKDIR/y-cruncher.tar.xz" ]] || ! tar -tf "$WORKDIR/y-cruncher.tar.xz" &>/dev/null; then
-			echo "--> Downloading y-cruncher archive..."
-			wget -c --show-progress -qO "$WORKDIR/y-cruncher.tar.xz" \
-			  "https://github.com/Mysticial/y-cruncher/releases/download/v$YCRUNCHER_VER/y-cruncher.v$YCRUNCHER_VER-static.tar.xz"
-		fi
+		ensure_archive "$WORKDIR/y-cruncher.tar.xz" "y-cruncher" \
+		  "https://github.com/Mysticial/y-cruncher/releases/download/v$YCRUNCHER_VER/y-cruncher.v$YCRUNCHER_VER-static.tar.xz" \
+		  tar -tf
 		echo "--> Uncompressing y-cruncher..."
 		cd "$WORKDIR"
 		tar -xf y-cruncher.tar.xz
@@ -651,4 +654,3 @@ cd "$WORKDIR"
 python /usr/bin/benchmark_scraper.py
 
 exit 0
-

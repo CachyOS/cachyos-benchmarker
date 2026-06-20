@@ -11,8 +11,9 @@ from collections import defaultdict
 # Function to parse log files and extract test data, system information, and kernel versions
 def parse_log_files():
     test_data = defaultdict(list)
-    kernel_info = defaultdict(dict)
+    kernel_info = {}
     kernel_versions = defaultdict(dict)
+    kernel_metadata = {}
 
     for file in os.listdir('.'):
         if file.endswith('.log') and file.startswith('benchie_'):
@@ -22,6 +23,9 @@ def parse_log_files():
             kernel_version_match = re.search(r'Kernel: (\S+)', data_text)
             if kernel_version_match:
                 kernel_version = kernel_version_match.group(1)
+                kernel_label = kernel_version
+                scx = "none"
+                scx_version = "none"
             else:
                 print(f"Warning: Could not extract kernel version from file: {file}")
                 continue
@@ -31,7 +35,13 @@ def parse_log_files():
             if scx_match and scx_version_match:
                 scx = scx_match.group(1)
                 scx_version = scx_version_match.group(1)
-                kernel_version = ''.join([kernel_version, '_', scx, '_', scx_version])
+                kernel_label = ''.join([kernel_version, '_', scx, '_', scx_version])
+
+            kernel_metadata[kernel_label] = {
+                "kernel": kernel_version,
+                "scx_scheduler": scx,
+                "scx_version": scx_version,
+            }
 
             system_info_match = re.search(r'System:(.*?)$', data_text, re.DOTALL)
             if system_info_match:
@@ -43,11 +53,11 @@ def parse_log_files():
             for match in re.finditer(r'(stress-ng cpu-cache-mem|y-cruncher pi 1b|perf sched msg fork thread|perf memcpy|namd 92K atoms|calculating prime numbers|argon2 hashing|ffmpeg compilation|xz compression|kernel defconfig|blender render|x265 encoding|Total time \(s\)|Total score): (\d+\.\d+)', data_text):
                 test_name = match.group(1)
                 test_time = float(match.group(2))
-                test_data[(kernel_version, test_name)].append(test_time)
-                kernel_versions[kernel_version].setdefault(test_name, []).append(test_time)
-                kernel_info[kernel_version] = system_info
+                test_data[(kernel_label, test_name)].append(test_time)
+                kernel_versions[kernel_label].setdefault(test_name, []).append(test_time)
+                kernel_info[kernel_label] = system_info
 
-    return test_data, kernel_info, kernel_versions
+    return test_data, kernel_info, kernel_versions, kernel_metadata
 
 # Function to aggregate test results
 def aggregate_test_results(data):
@@ -88,12 +98,18 @@ def plot_horizontal_bar_chart_with_annotations(average_times, mode, kernel_versi
 colors = list(mcolors.TABLEAU_COLORS.keys())
 
 # Function to export aggregated data to CSV and JSON
-def export_data(average_times, kernel_versions, csv_filename, json_filename):
-    # Helper to split the concatenated kernel version string
+def export_data(average_times, kernel_versions, csv_filename, json_filename, kernel_metadata=None):
+    # Helper to split the concatenated kernel version string. Prefer parser metadata
+    # so scheduler names containing underscores (for example scx_lavd) are preserved.
     def split_kernel_string(kv):
-        parts = kv.rsplit('_', 2)
-        if len(parts) == 3:
-            return parts[0], parts[1], parts[2]
+        if kernel_metadata and kv in kernel_metadata:
+            metadata = kernel_metadata[kv]
+            return metadata["kernel"], metadata["scx_scheduler"], metadata["scx_version"]
+
+        parts = kv.rsplit('_', 1)
+        if len(parts) == 2 and '_' in parts[0]:
+            kernel, scx = parts[0].split('_', 1)
+            return kernel, scx, parts[1]
         return kv, "none", "none"
 
     # JSON export
@@ -174,7 +190,7 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     plt.close()
 
 # Extract test data, system information, and kernel versions from .log files
-test_data, kernel_info, kernel_versions = parse_log_files()
+test_data, kernel_info, kernel_versions, kernel_metadata = parse_log_files()
 
 # Check if logs were found
 if test_data:
@@ -200,7 +216,7 @@ if test_data:
     json_filename = f"test_results_{timestamp}.json"
 
     # Export data to CSV and JSON
-    export_data(average_times, kernel_versions_list, csv_filename, json_filename)
+    export_data(average_times, kernel_versions_list, csv_filename, json_filename, kernel_metadata)
 
     # Generate HTML page
     html_content = f"""
