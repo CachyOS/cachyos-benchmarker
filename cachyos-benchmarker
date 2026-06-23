@@ -193,8 +193,12 @@ runyc() {
 }
 
 rungeekbench() {
-	local GBOUT="$WORKDIR/rungeekbench"
-	geekbench > "$GBOUT" 2>/dev/null &
+	GB_STATUS="failed"
+	GB_ERROR=""
+	GB_URL=""
+	GB_LOG="$WORKDIR/geekbench_${CDATE}.log"
+
+	geekbench --cpu > "$GB_LOG" 2>&1 &
 	local PID=$!
 	echo -n -e "* geekbench CPU benchmark:\t\t"
 	local s='-+' ; local i=0
@@ -203,14 +207,22 @@ rungeekbench() {
 		printf "\b${s:$i:1}"
 		sleep 1
 	done
+
+	wait "$PID"
+	local gb_rc=$?
+	if (( gb_rc != 0 )); then
+		printf "\b failed\n"
+		GB_ERROR="Geekbench failed with exit code $gb_rc"
+		return 0
+	fi
+
 	printf "\b done\n"
-	# geekbench doesn't print scores locally; extract the results URL and fetch scores from it
-	GB_URL=$(grep -oP 'https://browser\.geekbench\.com/v6/cpu/\d+' "$GBOUT" | head -1)
+	GB_STATUS="completed"
+	GB_URL=$(grep -oE 'https://browser\.geekbench\.com/v6/cpu/[0-9]+' "$GB_LOG" | head -n1)
 	if [[ -n "$GB_URL" ]]; then
-		local GBHTML
-		GBHTML=$(curl -sL "$GB_URL")
-		GB_SINGLE=$(echo "$GBHTML" | grep -A1 "score-container-1" | grep -oP '(?<=<div class=.score.>)\d+')
-		GB_MULTI=$(echo "$GBHTML" | grep -B1 "Multi-Core Score" | grep -oP '(?<=<div class=.score.>)\d+')
+		GB_STATUS="uploaded"
+	else
+		GB_ERROR="Geekbench completed, but no result URL was found"
 	fi
 	return 0
 }
@@ -630,15 +642,20 @@ echo "=================================================="
 if command -v geekbench &>/dev/null; then
 	rungeekbench
 	echo "--------------------------------------------------"
-	echo "Geekbench CPU Score:"
+	echo "Geekbench CPU Result:"
 	echo "--------------------------------------------------"
-	if [[ -n "$GB_SINGLE" && -n "$GB_MULTI" ]]; then
-		echo "  Single-Core: ${TB}$GB_SINGLE${TN}"
-		echo "  Multi-Core:  ${TB}$GB_MULTI${TN}"
-		echo -e "geekbench single-core: $GB_SINGLE" >> "$LOGFILE"
-		echo -e "geekbench multi-core: $GB_MULTI" >> "$LOGFILE"
+	if [[ "$GB_STATUS" == "uploaded" ]]; then
+		echo "  Result URL: $GB_URL"
+		echo "  Log: $GB_LOG"
+		echo -e "geekbench status: uploaded" >> "$LOGFILE"
+		echo -e "geekbench url: $GB_URL" >> "$LOGFILE"
+		echo -e "geekbench log: $GB_LOG" >> "$LOGFILE"
 	else
-		echo "  ${FARBE1}FAILED${TN} (check $WORKDIR/rungeekbench for details)"
+		echo "  ${FARBE1}${GB_ERROR:-Geekbench did not provide a result URL}${TN}"
+		[[ -n "$GB_LOG" ]] && echo "  Log: $GB_LOG"
+		echo -e "geekbench status: ${GB_STATUS:-failed}" >> "$LOGFILE"
+		[[ -n "$GB_ERROR" ]] && echo -e "geekbench error: $GB_ERROR" >> "$LOGFILE"
+		[[ -n "$GB_LOG" ]] && echo -e "geekbench log: $GB_LOG" >> "$LOGFILE"
 	fi
 	echo "=================================================="
 fi
