@@ -196,11 +196,24 @@ runyc() {
 
 runschbench() {
 	local RESFILE="$WORKDIR/runschbench"
-	schbench -m 2 -r 30 2>&1 | grep -oP '99\.0th:\s*\K\d+' | head -1 | \
+	schbench -m 2 -r 30 2>&1 | tee "$WORKDIR/schbench_raw" | \
+	  grep -oP '99\.0th:\s*\K\d+' | head -1 | \
 	  awk '{printf "%.2f\n", $1}' > "$RESFILE" &
 	local PID=$!
 	echo -n -e "* ${TNAMES[12]}:\t\t"
 	animate 12 && return 0 || return 99
+}
+
+runrps() {
+	local RESFILE="$WORKDIR/runrps"
+	if [[ -f "$WORKDIR/schbench_raw" ]]; then
+		grep -oP 'average rps: \K[\d.]+' "$WORKDIR/schbench_raw" | \
+		  awk '{printf "%.2f\n", $1}' > "$RESFILE"
+	fi
+	echo -n -e "* schbench avg rps:\t\t"
+	cat "$RESFILE" 2>/dev/null || echo "N/A"
+	echo -e "schbench avg rps: $(cat "$RESFILE" 2>/dev/null || echo "0")" >> "$LOGFILE"
+	return 0
 }
 
 runcyclictest() {
@@ -296,6 +309,7 @@ intro() {
     echo -e "    ${B_YELLOW}• Blender BMW${REGULAR}             : CPU-only Blender render (BMW model)"
     echo -e "    ${B_YELLOW}• y-cruncher${REGULAR}              : Highly optimized pi calculator (1 billion digits)"
     echo -e "    ${B_YELLOW}• schbench (us)${REGULAR}          : Wakeup latency benchmark (P99 latency, lower is better)"
+    echo -e "    ${B_YELLOW}• schbench (rps)${REGULAR}         : Wakeup throughput from the same schbench run (higher is better)"
     echo -e "    ${B_YELLOW}• cyclictest (us)${REGULAR}       : Real-time scheduling latency (max latency, lower is better)"
     echo -e "    ${B_YELLOW}• geekbench (optional)${REGULAR}    : Runs standard CPU benchmarks (requires 'geekbench' in PATH)\n"
 
@@ -335,8 +349,8 @@ killproc() {
 
 exitproc() {
 	echo -e "\n-> Removing temporary files..."
-	rm -f "$WORKDIR"/run* "$WORKDIR"/stressC "$WORKDIR"/*.txt \
-	      "$WORKDIR"/*.jpg "$WORKDIR"/*.ppm
+	rm -f "$WORKDIR"/run* "$WORKDIR"/stressC "$WORKDIR"/schbench_raw \
+	      "$WORKDIR"/*.txt "$WORKDIR"/*.jpg "$WORKDIR"/*.ppm
 	rm -f "$LOCKFILE"
 
 	if [[ "$CLEANUP" == "true" ]]; then
@@ -639,6 +653,8 @@ runkern && sleep 2 || exit 8
 runblend && sleep 2 || exit 8
 runx265 && sleep 2 || exit 8
 runschbench && sleep 2 || exit 8
+runrps
+sleep 1
 runcyclictest && sleep 2 || exit 8
 
 # time and score calculations, print and log final results
