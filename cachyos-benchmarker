@@ -196,7 +196,7 @@ runyc() {
 
 runschbench() {
 	local RESFILE="$WORKDIR/runschbench"
-	schbench -m 2 -t 30 2>/dev/null | grep -oP '99th[ ,]+\K\d+' | \
+	schbench -m 2 -r 30 2>&1 | grep -oP '99\.0th:\s*\K\d+' | head -1 | \
 	  awk '{printf "%.2f\n", $1}' > "$RESFILE" &
 	local PID=$!
 	echo -n -e "* ${TNAMES[12]}:\t\t"
@@ -205,9 +205,9 @@ runschbench() {
 
 runcyclictest() {
 	local RESFILE="$WORKDIR/runcyclictest"
-	cyclictest -D 30 -S -q -m -p 95 2>/dev/null | \
-	  grep 'Max Latencies' | sed 's/.*: *//' | tr ' ' '\n' | sort -n | \
-	  tail -1 | awk '{printf "%.2f\n", $1}' > "$RESFILE" &
+	cyclictest -D 30 -t -i 1000 -d 0 -q -m --policy=other 2>/dev/null | \
+	  grep '^T:' | sed 's/.*Max:[[:space:]]*//' | sort -n | tail -1 | \
+	  awk '{printf "%.2f\n", $1}' > "$RESFILE" &
 	local PID=$!
 	echo -n -e "* ${TNAMES[13]}:\t\t"
 	animate 13 && return 0 || return 99
@@ -357,6 +357,7 @@ exitproc() {
 # vars
 export LANG=C
 CURRDIR=$(pwd)
+SCRIPTDIR=$(dirname "$(readlink -f "$0")")
 TMP="/tmp"
 VER="v2.2"
 FFMPEGVER="7.0.1"
@@ -644,6 +645,14 @@ runcyclictest && sleep 2 || exit 8
 unset ARRAYTIME ; unset ARRAY
 ARRAYTIME=($(awk -F': ' '{print $2}' "$LOGFILE"))
 
+# Guard: replace any empty or zero ARRAYTIME entries with 0.01
+# to keep the geometric mean well-defined
+for ((i=0; i<${NRTESTS}; i++)) ; do
+	if [[ -z "${ARRAYTIME[$i]}" || "${ARRAYTIME[$i]}" == "0"* ]]; then
+		ARRAYTIME[$i]=0.01
+	fi
+done
+
 # using geometric mean for now
 for ((i=0; i<${NRTESTS}; i++)) ; do
 	ARRAY[$i]="$(python -c "print(round(( ${ARRAYTIME[$i]} * $COEFF * ${WEIGHTS[$i]}),4))")"
@@ -693,6 +702,10 @@ echo -e "\nSCX Version: ${SCX_VERSION}" >> "$LOGFILE"
 echo -e "\n ${VERSION}" >> "$LOGFILE"
 
 cd "$WORKDIR"
-python /usr/bin/benchmark_scraper.py
+if [[ -f "$SCRIPTDIR/benchmark_scraper.py" ]]; then
+	python "$SCRIPTDIR/benchmark_scraper.py"
+else
+	python /usr/bin/benchmark_scraper.py
+fi
 
 exit 0
