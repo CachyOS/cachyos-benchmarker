@@ -19,8 +19,8 @@ TNAMES=('stress-ng cpu-cache-mem'	#0
 	'xz compression'		#9
 	'kernel defconfig'		#10
 	'y-cruncher pi 1b'		#11
-	'schbench p99 latency'		#12
-	'cyclictest max latency'	#13
+	'schbench p99 latency (us)'	#12
+	'cyclictest max latency (us)'	#13
 )
 
 # check if the active scheduler is still running and hasn't crashed/exited
@@ -295,8 +295,8 @@ intro() {
     echo -e "    ${B_YELLOW}• x265 encoding${REGULAR}           : Encodes a short 1080p video clip"
     echo -e "    ${B_YELLOW}• Blender BMW${REGULAR}             : CPU-only Blender render (BMW model)"
     echo -e "    ${B_YELLOW}• y-cruncher${REGULAR}              : Highly optimized pi calculator (1 billion digits)"
-    echo -e "    ${B_YELLOW}• schbench${REGULAR}                : Wakeup latency benchmark (P99 latency, lower is better)"
-    echo -e "    ${B_YELLOW}• cyclictest${REGULAR}             : Real-time scheduling latency (max latency, lower is better)"
+    echo -e "    ${B_YELLOW}• schbench (us)${REGULAR}          : Wakeup latency benchmark (P99 latency, lower is better)"
+    echo -e "    ${B_YELLOW}• cyclictest (us)${REGULAR}       : Real-time scheduling latency (max latency, lower is better)"
     echo -e "    ${B_YELLOW}• geekbench (optional)${REGULAR}    : Runs standard CPU benchmarks (requires 'geekbench' in PATH)\n"
 
     echo -e "  ${B_CYAN}${BOLD}Resilience & Caching Features:${REGULAR}"

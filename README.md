@@ -11,8 +11,8 @@
 * kernel defconfig
 * namd
 * x265 encoding
-* schbench wakeup latency
-* cyclictest scheduling latency
+* schbench wakeup latency (us)
+* cyclictest scheduling latency (us)
 
 ## How It Works
 
