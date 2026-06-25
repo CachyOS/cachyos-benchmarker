@@ -197,7 +197,7 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
                 Patch(facecolor='#e15759', label='↓ lower is better'),
                 Patch(facecolor='#59a14f', label='↑ higher is better'),
             ]
-            ax_bottom.legend(handles=legend_elements, loc='lower right', fontsize=9)
+            ax_bottom.legend(handles=legend_elements, loc='upper right', fontsize=9)
 
         ax_bottom.set_title(f'{kv} — Scheduler Latency', fontsize=11, fontweight='bold')
         ax_bottom.grid(axis='x', linestyle='--', alpha=0.3)
