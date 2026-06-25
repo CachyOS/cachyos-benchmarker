@@ -296,7 +296,7 @@ intro() {
     RAM_GB=$(python -c "print(round($RAMSIZE / 1024, 1))")
     echo -e "    ${B_YELLOW}• System RAM${REGULAR}   : ${RAM_GB} GB (${RAMSIZE} MB)\n"
 
-    echo -e "  ${B_CYAN}${BOLD}Benchmarks Overview:${REGULAR}"
+    echo -e "  ${B_CYAN}${BOLD}Benchmarks Overview — Category 1: Throughput & Compilation${REGULAR}"
     echo -e "    ${B_YELLOW}• stress-ng cpu-cache-mem${REGULAR} : Sort & search, integer/float arithmetics, memory & cache"
     echo -e "    ${B_YELLOW}• perf sched${REGULAR}              : Interprocess communication and pipelining"
     echo -e "    ${B_YELLOW}• perf mem${REGULAR}                : Raw RAM throughput speed using libc memcpy"
@@ -308,9 +308,11 @@ intro() {
     echo -e "    ${B_YELLOW}• x265 encoding${REGULAR}           : Encodes a short 1080p video clip"
     echo -e "    ${B_YELLOW}• Blender BMW${REGULAR}             : CPU-only Blender render (BMW model)"
     echo -e "    ${B_YELLOW}• y-cruncher${REGULAR}              : Highly optimized pi calculator (1 billion digits)"
-    echo -e "    ${B_YELLOW}• schbench (us)${REGULAR}          : Wakeup latency benchmark (P99 latency, lower is better)"
-    echo -e "    ${B_YELLOW}• schbench (rps)${REGULAR}         : Wakeup throughput from the same schbench run (higher is better)"
-    echo -e "    ${B_YELLOW}• cyclictest (us)${REGULAR}       : Real-time scheduling latency (max latency, lower is better)"
+    echo -e ""
+    echo -e "  ${B_CYAN}${BOLD}Benchmarks Overview — Category 2: Scheduler Latency${REGULAR}"
+    echo -e "    ${B_YELLOW}• schbench (us)${REGULAR}          : Wakeup latency benchmark (P99 latency, ↓ lower is better)"
+    echo -e "    ${B_YELLOW}• schbench (rps)${REGULAR}         : Wakeup throughput from the same schbench run (↑ higher is better)"
+    echo -e "    ${B_YELLOW}• cyclictest (us)${REGULAR}       : Real-time scheduling latency (max latency, ↓ lower is better)"
     echo -e "    ${B_YELLOW}• geekbench (optional)${REGULAR}    : Runs standard CPU benchmarks (requires 'geekbench' in PATH)\n"
 
     echo -e "  ${B_CYAN}${BOLD}Resilience & Caching Features:${REGULAR}"
