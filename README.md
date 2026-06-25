@@ -12,6 +12,7 @@
 * namd
 * x265 encoding
 * schbench wakeup latency (us)
+* schbench throughput (rps)
 * cyclictest scheduling latency (us)
 
 ## How It Works
