@@ -140,10 +140,12 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
         cat2_names, _, _, _ = get_category2_tests(avg)
         max_cat2 = max(max_cat2, len(cat2_names))
 
-    # Figure sizing: per kernel row, ~3in for cat1, ~2.5in for cat2
-    row_height = 3.0 + (2.5 if max_cat2 > 0 else 0)
+    # Figure sizing: per kernel row, generous height and spacing
+    cat1_height = 4.0
+    cat2_height = 3.0 if max_cat2 > 0 else 0
+    row_height = cat1_height + cat2_height
     fig, axes = plt.subplots(num_kernels, 2,
-                             figsize=(14, num_kernels * row_height))
+                             figsize=(15, num_kernels * row_height))
 
     if num_kernels == 1:
         axes = [axes]
@@ -164,11 +166,12 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
             values_rev = cat1_values[::-1]
             bars = ax_left.barh(names_rev, values_rev, color='skyblue', edgecolor='white')
             for bar, val in zip(bars, values_rev):
-                ax_left.text(bar.get_width() + max(cat1_values) * 0.01, bar.get_y() + bar.get_height() / 2,
-                             f'{val:.2f}', va='center', fontsize=8)
-            ax_left.set_xlabel('Time (s), lower is better', fontsize=9)
+                ax_left.text(bar.get_width() + max(cat1_values) * 0.01,
+                             bar.get_y() + bar.get_height() / 2,
+                             f'{val:.2f}', va='center', fontsize=9)
+            ax_left.set_xlabel('Time (s), lower is better', fontsize=10)
 
-        ax_left.set_title(f'{kv} — Throughput & Compilation', fontsize=10, fontweight='bold')
+        ax_left.set_title(f'{kv} — Throughput & Compilation', fontsize=11, fontweight='bold')
         ax_left.grid(axis='x', linestyle='--', alpha=0.3)
 
         # ── Category 2: bar chart with per-metric direction ──
@@ -193,7 +196,7 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
                 direction_label = '↑' if d == 'higher' else '↓'
                 ax_right.text(bar.get_width() + max(cat2_values) * 0.01,
                               bar.get_y() + bar.get_height() / 2,
-                              f'{label} {direction_label}', va='center', fontsize=9)
+                              f'{label} {direction_label}', va='center', fontsize=10)
 
             # Create legend-like direction labels
             from matplotlib.patches import Patch
@@ -201,14 +204,15 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
                 Patch(facecolor='#e15759', label='↓ lower is better'),
                 Patch(facecolor='#59a14f', label='↑ higher is better'),
             ]
-            ax_right.legend(handles=legend_elements, loc='lower right', fontsize=8)
+            ax_right.legend(handles=legend_elements, loc='lower right', fontsize=9)
 
-        ax_right.set_title(f'{kv} — Scheduler Latency', fontsize=10, fontweight='bold')
+        ax_right.set_title(f'{kv} — Scheduler Latency', fontsize=11, fontweight='bold')
         ax_right.grid(axis='x', linestyle='--', alpha=0.3)
 
+    # Position suptitle higher and add extra space between the two category subplots
     fig.suptitle(f'CachyOS Benchmarker — Categorized Results ({mode} mode)',
-                 fontsize=14, fontweight='bold')
-    plt.subplots_adjust(hspace=0.4, wspace=0.3, top=0.93)
+                 fontsize=14, fontweight='bold', y=0.97)
+    plt.subplots_adjust(hspace=0.55, wspace=0.3, top=0.92)
     plt.savefig(f'categorized_comparison_{mode}.png', dpi=160, bbox_inches='tight')
     plt.close()
 
