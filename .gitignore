@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary benchmark run files
+run*
+
+# Benchmark assets (downloaded)
+bosphorus_hd.7z
+bosphorus_hd.y4m
+firefox102.tar
+firefox102.tar.xz
+ffmpeg.tar.xz
+ffmpeg-*/
+namd.tar.gz
+namd-example.tar.gz
+namd/
+linux-*.tar.xz
+linux-*/
+y-cruncher.tar.xz
+y-cruncher v*/
+
+# Result files
+benchie_*.log
+test_performance.html
+test_results_*.csv
+test_results_*.json
+*.png
+
+# Geekbench logs
+geekbench_*.log
+
+# Lock files
+benchie.XXXX

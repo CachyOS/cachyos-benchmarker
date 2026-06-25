@@ -19,6 +19,8 @@ TNAMES=('stress-ng cpu-cache-mem'	#0
 	'xz compression'		#9
 	'kernel defconfig'		#10
 	'y-cruncher pi 1b'		#11
+	'schbench p99 latency'		#12
+	'cyclictest max latency'	#13
 )
 
 # check if the active scheduler is still running and hasn't crashed/exited
@@ -192,6 +194,25 @@ runyc() {
 	animate 11 && return 0 || return 99
 }
 
+runschbench() {
+	local RESFILE="$WORKDIR/runschbench"
+	schbench -m 2 -t 30 2>/dev/null | grep -oP '99th[ ,]+\K\d+' | \
+	  awk '{printf "%.2f\n", $1}' > "$RESFILE" &
+	local PID=$!
+	echo -n -e "* ${TNAMES[12]}:\t\t"
+	animate 12 && return 0 || return 99
+}
+
+runcyclictest() {
+	local RESFILE="$WORKDIR/runcyclictest"
+	cyclictest -D 30 -S -q -m -p 95 2>/dev/null | \
+	  grep 'Max Latencies' | sed 's/.*: *//' | tr ' ' '\n' | sort -n | \
+	  tail -1 | awk '{printf "%.2f\n", $1}' > "$RESFILE" &
+	local PID=$!
+	echo -n -e "* ${TNAMES[13]}:\t\t"
+	animate 13 && return 0 || return 99
+}
+
 rungeekbench() {
 	GB_STATUS="failed"
 	GB_ERROR=""
@@ -274,6 +295,8 @@ intro() {
     echo -e "    ${B_YELLOW}• x265 encoding${REGULAR}           : Encodes a short 1080p video clip"
     echo -e "    ${B_YELLOW}• Blender BMW${REGULAR}             : CPU-only Blender render (BMW model)"
     echo -e "    ${B_YELLOW}• y-cruncher${REGULAR}              : Highly optimized pi calculator (1 billion digits)"
+    echo -e "    ${B_YELLOW}• schbench${REGULAR}                : Wakeup latency benchmark (P99 latency, lower is better)"
+    echo -e "    ${B_YELLOW}• cyclictest${REGULAR}             : Real-time scheduling latency (max latency, lower is better)"
     echo -e "    ${B_YELLOW}• geekbench (optional)${REGULAR}    : Runs standard CPU benchmarks (requires 'geekbench' in PATH)\n"
 
     echo -e "  ${B_CYAN}${BOLD}Resilience & Caching Features:${REGULAR}"
@@ -599,8 +622,8 @@ header() {
 }
 
 # run
-NRTESTS=12
-declare -a WEIGHTS=(0.9 0.9 0.85 0.85 0.85 0.85 0.8 0.95 0.95 1 0.95 1)
+NRTESTS=14
+declare -a WEIGHTS=(0.9 0.9 0.85 0.85 0.85 0.85 0.8 0.95 0.95 1 0.95 1 0.85 0.9)
 checkfiles && checksys && header || exit 8
 runstress && sleep 2 || exit 8
 runyc && sleep 2 || exit 8
@@ -614,6 +637,8 @@ runxz && sleep 2 || exit 8
 runkern && sleep 2 || exit 8
 runblend && sleep 2 || exit 8
 runx265 && sleep 2 || exit 8
+runschbench && sleep 2 || exit 8
+runcyclictest && sleep 2 || exit 8
 
 # time and score calculations, print and log final results
 unset ARRAYTIME ; unset ARRAY
