@@ -203,8 +203,8 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
         ax_bottom.grid(axis='x', linestyle='--', alpha=0.3)
 
     fig.suptitle(f'CachyOS Benchmarker — Categorized Results ({mode} mode)',
-                 fontsize=14, fontweight='bold', y=0.97)
-    plt.subplots_adjust(hspace=0.6, top=0.92)
+                 fontsize=14, fontweight='bold', y=0.98)
+    plt.subplots_adjust(hspace=0.6, top=0.88)
     plt.savefig(f'categorized_comparison_{mode}.png', dpi=160, bbox_inches='tight')
     plt.close()
 
