@@ -8,6 +8,11 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from collections import defaultdict
 
+# ── Constants ──
+# When y-cruncher is intentionally skipped on infinity kernels,
+# the bash script writes this placeholder value to preserve log alignment.
+Y_CRUNCHER_SKIP_VALUE = 0.01
+
 # ── Category definitions ──
 # Category 1: Throughput & Compilation benchmarks (all lower-is-better, in seconds)
 CATEGORY_1 = [
@@ -88,6 +93,13 @@ def parse_log_files():
                 kernel_versions[kernel_label].setdefault(test_name, []).append(test_time)
                 kernel_info[kernel_label] = system_info
 
+            # Detect intentionally skipped y-cruncher (placeholder value + infinity kernel)
+            yc_key = "y-cruncher pi 1b"
+            yc_values = kernel_versions.get(kernel_label, {}).get(yc_key, [])
+            if yc_values and all(v <= Y_CRUNCHER_SKIP_VALUE for v in yc_values):
+                if "infinity" in kernel_version.lower():
+                    kernel_metadata[kernel_label]["yc_skipped"] = True
+
     return test_data, kernel_info, kernel_versions, kernel_metadata
 
 # Function to aggregate test results
@@ -121,7 +133,7 @@ def get_category2_tests(average_times_for_kernel):
     return names, values, directions, units
 
 # New categorized composite chart
-def plot_categorized_comparison(average_times, mode, kernel_versions):
+def plot_categorized_comparison(average_times, mode, kernel_versions, kernel_metadata=None):
     """
     Generate a composite figure with two sections stacked vertically:
 
@@ -133,6 +145,12 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
     num_kernels = len(average_times)
     if num_kernels == 0:
         return
+
+    # Check if any kernel has y-cruncher skipped
+    has_skipped_yc = any(
+        kernel_metadata.get(kv, {}).get("yc_skipped", False)
+        for kv in kernel_versions
+    ) if kernel_metadata else False
 
     # Determine how many category 2 tests exist across all kernels
     max_cat2 = 0
@@ -151,20 +169,45 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
     average_times_rev = [average_times[i] for i in reverse_order]
     kernel_versions_rev = [kernel_versions[i] for i in reverse_order]
 
+    yc_present_in_any = False
     for row_idx, (avg, kv) in enumerate(zip(average_times_rev, kernel_versions_rev)):
         ax_top = axes[row_idx * 2]
         ax_bottom = axes[row_idx * 2 + 1]
+
+        kv_skipped_yc = kernel_metadata.get(kv, {}).get("yc_skipped", False) if kernel_metadata else False
 
         # ── Category 1: bar chart (top subplot) ──
         cat1_names, cat1_values = get_category1_tests(avg)
         if cat1_names:
             names_rev = cat1_names[::-1]
             values_rev = cat1_values[::-1]
-            bars = ax_top.barh(names_rev, values_rev, color='skyblue', edgecolor='white')
-            for bar, val in zip(bars, values_rev):
-                ax_top.text(bar.get_width() + max(cat1_values) * 0.01,
-                            bar.get_y() + bar.get_height() / 2,
-                            f'{val:.2f}', va='center', fontsize=9)
+            bar_colors = []
+            bar_hatches = []
+            for name, val in zip(names_rev, values_rev):
+                if name == "y-cruncher pi 1b" and kv_skipped_yc:
+                    bar_colors.append('white')
+                    bar_hatches.append('///')
+                else:
+                    bar_colors.append('skyblue')
+                    bar_hatches.append('')
+
+            bars = ax_top.barh(names_rev, values_rev, color=bar_colors,
+                               edgecolor='#999999', linewidth=0.8)
+            for bar, hatch in zip(bars, bar_hatches):
+                if hatch:
+                    bar.set_hatch(hatch)
+
+            for bar, name, val in zip(bars, names_rev, values_rev):
+                if name == "y-cruncher pi 1b" and kv_skipped_yc:
+                    yc_present_in_any = True
+                    ax_top.text(bar.get_width() + max(cat1_values) * 0.5,
+                                bar.get_y() + bar.get_height() / 2,
+                                'SKIPPED*', va='center', fontsize=8,
+                                color='#cc3333', fontstyle='italic')
+                else:
+                    ax_top.text(bar.get_width() + max(cat1_values) * 0.01,
+                                bar.get_y() + bar.get_height() / 2,
+                                f'{val:.2f}', va='center', fontsize=9)
             ax_top.set_xlabel('Time (s), lower is better', fontsize=10)
 
         ax_top.set_title(f'{kv} — Throughput & Compilation', fontsize=11, fontweight='bold')
@@ -204,7 +247,13 @@ def plot_categorized_comparison(average_times, mode, kernel_versions):
 
     fig.suptitle(f'CachyOS Benchmarker — Categorized Results ({mode} mode)',
                  fontsize=14, fontweight='bold', y=0.98)
-    plt.subplots_adjust(hspace=0.6, top=0.88)
+    if has_skipped_yc:
+        fig.text(0.5, 0.005,
+                 '* y-cruncher pi 1b skipped on Infinity Scheduler — v3 design trades '
+                 'synthetic throughput for real-world responsiveness.',
+                 ha='center', va='bottom', fontsize=8, fontstyle='italic', color='#666666')
+    plt.subplots_adjust(hspace=0.6, top=0.88,
+                        bottom=0.04 if has_skipped_yc else 0.02)
     plt.savefig(f'categorized_comparison_{mode}.png', dpi=160, bbox_inches='tight')
     plt.close()
 
@@ -224,11 +273,18 @@ def export_data(average_times, kernel_versions, csv_filename, json_filename, ker
     json_data = []
     for i, kernel_version in enumerate(kernel_versions):
         kernel, scx, scx_ver = split_kernel_string(kernel_version)
+        kv_skipped_yc = kernel_metadata.get(kernel_version, {}).get("yc_skipped", False) if kernel_metadata else False
+        metrics = {}
+        for k, v in average_times[i].items():
+            if k == "y-cruncher pi 1b" and kv_skipped_yc:
+                metrics[k] = "skipped"
+            else:
+                metrics[k] = float(v)
         entry = {
             "kernel": kernel,
             "scx_scheduler": scx,
             "scx_version": scx_ver,
-            "metrics": {k: float(v) for k, v in average_times[i].items()}
+            "metrics": metrics
         }
         json_data.append(entry)
 
@@ -248,16 +304,30 @@ def export_data(average_times, kernel_versions, csv_filename, json_filename, ker
 
         for i, kernel_version in enumerate(kernel_versions):
             kernel, scx, scx_ver = split_kernel_string(kernel_version)
+            kv_skipped_yc = kernel_metadata.get(kernel_version, {}).get("yc_skipped", False) if kernel_metadata else False
             row = [kernel, scx, scx_ver]
             for test_name in test_names:
-                row.append(average_times[i].get(test_name, ''))
+                val = average_times[i].get(test_name, '')
+                if test_name == "y-cruncher pi 1b" and kv_skipped_yc:
+                    row.append("skipped")
+                else:
+                    row.append(val)
             writer.writerow(row)
 
 # Function to plot performance comparison between different kernel versions (keep existing)
-def plot_kernel_version_comparison(average_times, mode, kernel_versions):
+def plot_kernel_version_comparison(average_times, mode, kernel_versions, kernel_metadata=None):
     all_test_names = list(average_times[0].keys())
-    all_test_names.reverse()
     num_tests = len(all_test_names)
+
+    # Find y-cruncher index in test names and detect skip
+    yc_idx = None
+    has_skipped = False
+    for idx, name in enumerate(all_test_names):
+        if name == "y-cruncher pi 1b":
+            yc_idx = idx
+            break
+
+    all_test_names_rev = all_test_names[::-1]
     num_kernel_versions = len(kernel_versions)
 
     base_height_per_test = 0.7
@@ -271,16 +341,29 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
 
     for i, avg_times in enumerate(average_times):
         kernel_version = kernel_versions[i]
+        kv_skipped_yc = kernel_metadata.get(kernel_version, {}).get("yc_skipped", False) if kernel_metadata else False
         values = list(avg_times.values())[::-1]
         color = colors[i % len(colors)]
-        ax.barh(np.arange(num_tests) + i * bar_height, values, height=bar_height,
-                label=kernel_version, color=color)
+        bars = ax.barh(np.arange(num_tests) + i * bar_height, values, height=bar_height,
+                       label=kernel_version, color=color)
         for j, value in enumerate(values):
-            ax.text(value, j + i * bar_height, f'{value:.2f}',
-                    fontsize=font_size, ha='left', va='center', color='black')
+            idx_in_rev = j
+            orig_idx = num_tests - 1 - idx_in_rev
+            if orig_idx == yc_idx and kv_skipped_yc:
+                has_skipped = True
+                bars[j].set_hatch('///')
+                bars[j].set_edgecolor('#999999')
+                bars[j].set_linewidth(0.8)
+                ax.text(0.005 * max(values) if max(values) > 0 else 0.01,
+                        j + i * bar_height, 'SKIPPED*',
+                        fontsize=font_size, ha='left', va='center',
+                        color='#cc3333', fontstyle='italic')
+            else:
+                ax.text(value, j + i * bar_height, f'{value:.2f}',
+                        fontsize=font_size, ha='left', va='center', color='black')
 
     ax.set_yticks(np.arange(num_tests) + bar_height * (num_kernel_versions - 1) / 2)
-    ax.set_yticklabels(all_test_names)
+    ax.set_yticklabels(all_test_names_rev)
     ax.set_xlabel('Average Time (s). Less is better')
     ax.set_ylabel('Mini-Benchmarker')
     ax.set_title(f'Test Performance Comparison Between Different Kernel Versions ({mode} mode)')
@@ -289,7 +372,15 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     ax.legend(handles[::-1], labels[::-1], loc='lower right')
     ax.grid(axis='x')
 
+    if has_skipped:
+        fig.text(0.5, 0.005,
+                 '* y-cruncher pi 1b skipped on Infinity Scheduler — '
+                 'v3 design trades synthetic throughput for real-world responsiveness.',
+                 ha='center', va='bottom', fontsize=8, fontstyle='italic', color='#666666')
+
     plt.tight_layout()
+    bottom_adj = 0.04 if has_skipped else 0.02
+    plt.subplots_adjust(bottom=bottom_adj)
     plt.savefig(f'kernel_version_comparison_{mode}.png')
     plt.close()
 
@@ -304,10 +395,10 @@ if test_data:
     average_times = [aggregate_test_results(kernel_versions[kv]) for kv in sorted_kernel_versions]
 
     # Generate categorized composite chart (NEW — replaces the old horizontal chart)
-    plot_categorized_comparison(average_times, 'All', kernel_versions_list)
+    plot_categorized_comparison(average_times, 'All', kernel_versions_list, kernel_metadata)
 
     # Keep the cross-kernel comparison chart (existing)
-    plot_kernel_version_comparison(average_times, 'All', kernel_versions_list)
+    plot_kernel_version_comparison(average_times, 'All', kernel_versions_list, kernel_metadata)
 
     # Generate ISO 8601 timestamp for filenames
     timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H-%M-%SZ')
@@ -330,7 +421,8 @@ if test_data:
 
     <h2>Categorized Results</h2>
     <p>Category 1: Throughput & Compilation (lower is better).
-       Category 2: Scheduler Latency (↓ lower is better, ↑ higher is better).</p>
+       Category 2: Scheduler Latency (↓ lower is better, ↑ higher is better).
+       <em>y-cruncher pi 1b skipped on Infinity Scheduler — v3 design trades synthetic throughput for real-world responsiveness.</em></p>
     <img src="categorized_comparison_All.png" alt="Categorized Comparison - All Kernels"
          style="max-width: 100%; height: auto;">
 
