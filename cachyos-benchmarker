@@ -378,6 +378,7 @@ TMP="/tmp"
 VER="v2.2"
 FFMPEGVER="7.0.1"
 YCRUNCHER_VER="0.8.6.9545"
+KERNEL_NAME=$(uname -r)
 CDATE=$(date +%F-%H%M)
 RAMSIZE=$(awk '/MemTotal/{print int($2 / 1000)}' /proc/meminfo)
 CPUCORES=$(nproc)
@@ -643,7 +644,12 @@ NRTESTS=14
 declare -a WEIGHTS=(0.9 0.9 0.85 0.85 0.85 0.85 0.8 0.95 0.95 1 0.95 1 0.85 0.9)
 checkfiles && checksys && header || exit 8
 runstress && sleep 2 || exit 8
-runyc && sleep 2 || exit 8
+if [[ "$KERNEL_NAME" == *"infinity"* ]]; then
+	echo -e "* ${TNAMES[11]}:\t\tSKIPPED (Infinity scheduler: takes >1m)"
+	echo -e "${TNAMES[11]}: 0.01" >> "$LOGFILE"
+else
+	runyc && sleep 2 || exit 8
+fi
 runperf_sch && sleep 2 || exit 8
 runperf_mem && sleep 2 || exit 8
 runnamd && sleep 2 || exit 8
