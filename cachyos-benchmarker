@@ -212,7 +212,6 @@ runrps() {
 	fi
 	echo -n -e "* schbench avg rps:\t\t"
 	cat "$RESFILE" 2>/dev/null || echo "N/A"
-	echo -e "schbench avg rps: $(cat "$RESFILE" 2>/dev/null || echo "0")" >> "$LOGFILE"
 	return 0
 }
 
@@ -672,7 +671,7 @@ ARRAYTIME=($(awk -F': ' '{print $2}' "$LOGFILE"))
 # Guard: replace any empty or zero ARRAYTIME entries with 0.01
 # to keep the geometric mean well-defined
 for ((i=0; i<${NRTESTS}; i++)) ; do
-	if [[ -z "${ARRAYTIME[$i]}" || "${ARRAYTIME[$i]}" == "0"* ]]; then
+	if [[ -z "${ARRAYTIME[$i]}" || "${ARRAYTIME[$i]}" == "0" || "${ARRAYTIME[$i]}" == "0.0" || "${ARRAYTIME[$i]}" == "0.00" ]]; then
 		ARRAYTIME[$i]=0.01
 	fi
 done
@@ -718,6 +717,7 @@ if command -v geekbench &>/dev/null; then
 	echo "=================================================="
 fi
 
+echo -e "schbench avg rps: $(cat "$WORKDIR/runrps" 2>/dev/null || echo "0")" >> "$LOGFILE"
 echo -e "\nName: ${NCHOICE}" >> "$LOGFILE"
 echo -e "Date: ${CDATE}" >> "$LOGFILE"
 echo -e "\n$SYSINFO" >> "$LOGFILE"
