@@ -20,6 +20,35 @@ Benchmarks are grouped into two categories in the generated charts:
 * schbench throughput (rps) — ↑ higher is better
 * cyclictest scheduling latency (us) — ↓ lower is better
 
+## Quick Start
+
+```bash
+# Run the full benchmark suite in a working directory
+sudo ./cachyos-benchmarker /path/to/workdir
+
+# The script will:
+#   1. Prompt you to drop the page cache
+#   2. Ask for a run label (or press Enter for auto-generated name)
+#   3. Download all required assets into the working directory
+#   4. Run all 14 benchmarks (this takes 15–25 minutes)
+#   5. Generate a .log file, charts, CSV, JSON, and HTML report
+
+# After completion, the working directory contains:
+#   benchie_<label>_<date>.log        — raw benchmark results
+#   categorized_comparison_All.png    — stacked chart (Category 1 + 2)
+#   kernel_version_comparison_All.png — cross-kernel grouped chart
+#   test_performance.html             — interactive HTML report
+#   test_results_*.csv / .json        — machine-readable exports
+
+# Example: compare two different kernels by running in separate directories
+sudo ./cachyos-benchmarker /tmp/bench-kernel-A
+# reboot into kernel B
+sudo ./cachyos-benchmarker /tmp/bench-kernel-B
+
+# Then run the scraper against both logfiles to generate a combined comparison:
+cd /tmp/bench-comparison && cp /tmp/bench-kernel-A/benchie_*.log . && cp /tmp/bench-kernel-B/benchie_*.log . && python3 /path/to/benchmark_scraper.py
+```
+
 ## How It Works
 
 *   **cachyos-benchmarker**: The core script. It prepares the environment, downloads necessary assets, and runs a suite of 14 synthetic and real-world benchmarks (such as `stress-ng`, Blender CPU render, FFmpeg/Kernel compilation, x265 encoding, schbench, and cyclictest). Results, along with detailed system and `sched-ext` information, are logged to a `.log` file.
