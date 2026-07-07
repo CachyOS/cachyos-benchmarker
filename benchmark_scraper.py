@@ -408,6 +408,14 @@ if test_data:
     # Export data to CSV and JSON
     export_data(average_times, kernel_versions_list, csv_filename, json_filename, kernel_metadata)
 
+    # Check if any kernel had y-cruncher skipped
+    yc_skip_note = ""
+    for kv in kernel_versions_list:
+        if kernel_metadata.get(kv, {}).get("yc_skipped", False):
+            yc_skip_note = ("\n       <em>y-cruncher pi 1b skipped on Infinity Scheduler — v3 design "
+                            "trades synthetic throughput for real-world responsiveness.</em>")
+            break
+
     # Generate HTML page
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -421,8 +429,7 @@ if test_data:
 
     <h2>Categorized Results</h2>
     <p>Category 1: Throughput & Compilation (lower is better).
-       Category 2: Scheduler Latency (↓ lower is better, ↑ higher is better).
-       <em>y-cruncher pi 1b skipped on Infinity Scheduler — v3 design trades synthetic throughput for real-world responsiveness.</em></p>
+       Category 2: Scheduler Latency (↓ lower is better, ↑ higher is better).{yc_skip_note}</p>
     <img src="categorized_comparison_All.png" alt="Categorized Comparison - All Kernels"
          style="max-width: 100%; height: auto;">
 
